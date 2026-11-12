@@ -1,7 +1,8 @@
--- MM2 Carbon Trade v5.0 / self-contained teleport-aware loader.
--- Read-only trade values, observed items and user-initiated server browsing.
-local SOURCE = [======[
-local embeddedSource = ... -- Source passed by the self-contained loader for teleport queueing.
+-- MM2 Carbon Trade v5.1 / Delta compatibility patch
+-- Replace the original MM2_Carbon_Trade_v5.lua on your GitHub with this file.
+local ok, failure = xpcall(function()
+-- Delta-compatible direct execution: no giant nested loadstring.
+local embeddedSource = nil
 -- MM2 CARBON TRADE v5.0 (trade UI is read-only; server join is user initiated)
 -- Shows prices AUTOMATICALLY on items placed in both MM2 trade offers.
 -- No menu, no input, no trade remotes, no auto-accept, no authentication.
@@ -455,10 +456,11 @@ local autoReload=false
 local queueRegistered=false
 local function queueAgain()
     if queueRegistered then return true end
-    if type(queueFunc)~="function" or type(embeddedSource)~="string" or #embeddedSource<1000 then return false end
-    local literal=string.format("%q",embeddedSource)
-    local payload="local s="..literal.."; local f=loadstring(s); if f then f(s) end"
-    local ok=pcall(queueFunc,payload)
+    if type(queueFunc)~="function" then return false end
+    -- Short queue payload: re-download the full file rather than queueing 37 KB.
+    -- Works only if this fixed source is uploaded at this GitHub path.
+    local payload = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/zxcswastik-cyber/valuemm2/refs/heads/main/MM2_Carbon_Trade_v5.lua"))()'
+    local ok = pcall(queueFunc, payload)
     if ok then queueRegistered=true end
     return ok
 end
@@ -868,6 +870,35 @@ env.MM2CarbonState=function()
         observedServers=seenServers,listedServers=#serverItems,autoReload=autoReload}
 end
 
-local f,err=loadstring(SOURCE)
-assert(f,err)
-return f(SOURCE)
+end, function(err)
+    if debug and type(debug.traceback) == "function" then return debug.traceback(tostring(err),2) end
+    return tostring(err)
+end)
+if not ok then
+    warn("[MM2 Carbon Trade] " .. tostring(failure))
+    pcall(function()
+        local pg = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui",5)
+        if not pg then return end
+        local old = pg:FindFirstChild("MM2CarbonError")
+        if old then old:Destroy() end
+        local g = Instance.new("ScreenGui")
+        g.Name = "MM2CarbonError"
+        g.ResetOnSpawn = false
+        g.DisplayOrder = 10001
+        g.Parent = pg
+        local t = Instance.new("TextLabel")
+        t.Size = UDim2.new(0,300,0,72)
+        t.Position = UDim2.new(.5,-150,0,64)
+        t.BackgroundColor3 = Color3.fromRGB(27,29,30)
+        t.BackgroundTransparency = .12
+        t.TextColor3 = Color3.fromRGB(238,214,211)
+        t.TextWrapped = true
+        t.TextSize = 13
+        t.Font = Enum.Font.Gotham
+        t.Text = "CARBON FAILED\n" .. tostring(failure):sub(1,220)
+        t.Parent = g
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0,10)
+        c.Parent = t
+    end)
+end
