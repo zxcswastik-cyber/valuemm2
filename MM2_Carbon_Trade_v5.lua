@@ -1,9 +1,9 @@
--- MM2 Carbon Trade v5.1 / Delta compatibility patch
--- Replace the original MM2_Carbon_Trade_v5.lua on your GitHub with this file.
+-- MM2 Carbon Trade v6 / Standard + Disguises + Assassin, Delta compatible
+-- Place into your GitHub repository as MM2_Carbon_Trade_v6_AllModes.lua.
 local ok, failure = xpcall(function()
 -- Delta-compatible direct execution: no giant nested loadstring.
 local embeddedSource = nil
--- MM2 CARBON TRADE v5.0 (trade UI is read-only; server join is user initiated)
+-- MM2 CARBON TRADE v6.0 (trade UI is read-only; server join is user initiated)
 -- Shows prices AUTOMATICALLY on items placed in both MM2 trade offers.
 -- No menu, no input, no trade remotes, no auto-accept, no authentication.
 -- Sources: periodically updated community Supreme CSV + older MM2Values archive.
@@ -12,8 +12,12 @@ local embeddedSource = nil
 -- This is an unofficial companion UI. Prices are estimated trade values, not Robux.
 -- Requires a Lua environment that can access PlayerGui and perform HTTP GET.
 
-if game.PlaceId ~= 142823291 then
-    warn("MM2 Carbon Trade is intended for Murder Mystery 2 (place 142823291).")
+-- All official MM2 modes share the same Universe (GameId), but have
+-- different PlaceIds. v5 returned here before even creating the GUI.
+local MM2_UNIVERSE_ID = 66654135
+local MAIN_PLACE_ID = 142823291
+if tonumber(game.GameId) ~= MM2_UNIVERSE_ID and tonumber(game.PlaceId) ~= MAIN_PLACE_ID then
+    warn("[MM2 Carbon] Unsupported experience: " .. tostring(game.GameId))
     return
 end
 local Players = game:GetService("Players")
@@ -301,9 +305,9 @@ end
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
-local PLACE_ID = 142823291
+local PLACE_ID = game.PlaceId -- Keep the server browser and Join in the CURRENT mode
 local RARE_THRESHOLD = 250
-local CACHE_FILE = "MM2Carbon_SeenServers_v5.json"
+local CACHE_FILE = "MM2Carbon_SeenServers_v6_" .. tostring(PLACE_ID) .. ".json"
 local CACHE_TTL = 30 * 60 -- 30 minute historical observation, NOT a live inventory lookup.
 local root = track(gui("ScreenGui", {
     Name = "MM2CarbonTradeV5", ResetOnSpawn = false,
@@ -403,7 +407,7 @@ launcher.BackgroundTransparency=.08
 local browser=panel(root,"Browser",UDim2.new(0,396,0,411),UDim2.new(1,-13,0,91))
 browser.AnchorPoint=Vector2.new(1,0)
 local browserScale=mk("UIScale",{Name="UIScale",Scale=1},browser)
-local browserTitle=textLabel(browser,"Title","CARBON  /  SERVER FINDER",UDim2.new(0,14,0,10),UDim2.new(0,311,0,22),13,true,C.fg)
+local browserTitle=textLabel(browser,"Title","CARBON  /  CURRENT MODE SERVERS",UDim2.new(0,14,0,10),UDim2.new(0,311,0,22),13,true,C.fg)
 browserTitle.Active=true;drag(browser,browserTitle)
 local close=button(browser,"Close","×",UDim2.new(1,-36,0,8),UDim2.new(0,27,0,25))
 local info=textLabel(browser,"Info","Only observed skins are identified",UDim2.new(0,14,0,36),UDim2.new(1,-28,0,18),11,false,C.muted)
@@ -457,9 +461,18 @@ local queueRegistered=false
 local function queueAgain()
     if queueRegistered then return true end
     if type(queueFunc)~="function" then return false end
-    -- Short queue payload: re-download the full file rather than queueing 37 KB.
-    -- Works only if this fixed source is uploaded at this GitHub path.
-    local payload = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/zxcswastik-cyber/valuemm2/refs/heads/main/MM2_Carbon_Trade_v5.lua"))()'
+    -- Queued on teleport only where Delta/executor actually supports this API.
+    -- Upload this exact v6 filename to the repository before expecting autoload.
+    local payload = [[
+        if not game:IsLoaded() then game.Loaded:Wait() end
+        local ok, err = pcall(function()
+            local source = game:HttpGet("https://raw.githubusercontent.com/zxcswastik-cyber/valuemm2/main/MM2_Carbon_Trade_v6_AllModes.lua")
+            local chunk, compileErr = loadstring(source)
+            assert(chunk, compileErr)
+            chunk()
+        end)
+        if not ok then warn("[MM2 Carbon teleport] " .. tostring(err)) end
+    ]]
     local ok = pcall(queueFunc, payload)
     if ok then queueRegistered=true end
     return ok
@@ -722,11 +735,11 @@ local function badgeFor(slot)
     return b
 end
 local function countOffer(offer)
-    local container=find(offer,"Container")
+    local container=find(offer,"Container") or offer
     local out={supreme=0,mm2=0,missingSupreme=0,missingMM2=0,top=nil,rare={}}
-    if not container then return out end
     for i=1,4 do
-        local slot=find(container,"NewItem"..i)
+        -- Some GUI variations expose NewItem directly under the offer.
+        local slot=find(container,"NewItem"..i) or find(offer,"NewItem"..i)
         if slot then
             local tag=badgeFor(slot)
             local name,count
@@ -763,10 +776,12 @@ local function countText(value,missing)
     return missing>0 and (format(value).."+?") or format(value)
 end
 local function updateTrade(screen)
-    local trade=nested(screen,"Container","Trade")
+    -- The main UI path is used when available, with a safe recursive fallback
+    -- for other MM2 modes and mobile layouts.
+    local trade=nested(screen,"Container","Trade") or screen:FindFirstChild("Trade",true)
     if not trade or not isVisible(trade) then return false end
-    local our=trade:FindFirstChild("YourOffer")
-    local theirs=trade:FindFirstChild("TheirOffer")
+    local our=trade:FindFirstChild("YourOffer") or trade:FindFirstChild("YourOffer",true)
+    local theirs=trade:FindFirstChild("TheirOffer") or trade:FindFirstChild("TheirOffer",true)
     if not our or not theirs or not isVisible(our) or not isVisible(theirs) then return false end
     local mine=countOffer(our)
     local other=countOffer(theirs)
@@ -836,7 +851,21 @@ local function tradePulse()
         local screen=find(playerGui,screenName)
         if screen and validScreen(screen) then
             local ok,yes=pcall(updateTrade,screen)
-            if ok and yes then opened=true end
+            if ok and yes then opened=true; break end
+        end
+    end
+    -- If the mode renamed the ScreenGui, discover it by the Trade layout.
+    -- Only inspect top-level ScreenGuis; this stays cheap on mobile.
+    if not opened then
+        for _,screen in ipairs(playerGui:GetChildren()) do
+            if screen ~= root and screen:IsA("ScreenGui") and validScreen(screen) then
+                local candidate=screen:FindFirstChild("Trade",true)
+                if candidate and candidate:FindFirstChild("YourOffer",true)
+                    and candidate:FindFirstChild("TheirOffer",true) then
+                    local ok,yes=pcall(updateTrade,screen)
+                    if ok and yes then opened=true; break end
+                end
+            end
         end
     end
     if not opened and tradeOpen then awaitingSuccess=15 end
@@ -866,7 +895,7 @@ task.spawn(function()
 end)
 redraw()
 env.MM2CarbonState=function()
-    return {version=5,loaded=loaded,supremeDate=supremeStamp,mm2Date=mm2Stamp,
+    return {version=6,placeId=PLACE_ID,gameId=game.GameId,loaded=loaded,supremeDate=supremeStamp,mm2Date=mm2Stamp,
         observedServers=seenServers,listedServers=#serverItems,autoReload=autoReload}
 end
 
