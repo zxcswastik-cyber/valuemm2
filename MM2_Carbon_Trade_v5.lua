@@ -1,4 +1,4 @@
--- MM2 CARBON X | Read-Only Trading Companion
+-- MM2 CARBON X | Read-Only Trading Companion (MM2 Styled & Live-Synced)
 if not game:IsLoaded() then
     game.Loaded:Wait()
 end
@@ -57,28 +57,45 @@ local ok, failure = xpcall(function()
         TOGGLE_KEY = Enum.KeyCode.RightShift
     }
 
+    -- MM2-Authentic Palette (Obsidian Slate, Murderer Crimson, Sheriff Blue, Supreme Gold & Rarity Tiers)
     local Palette = {
-        canvas = Color3.fromRGB(16, 17, 20),
-        sidebar = Color3.fromRGB(20, 22, 26),
-        surface = Color3.fromRGB(26, 29, 34),
-        elevated = Color3.fromRGB(34, 38, 45),
-        hover = Color3.fromRGB(41, 46, 54),
-        hairline = Color3.fromRGB(42, 47, 55),
-        focus = Color3.fromRGB(110, 122, 138),
+        canvas = Color3.fromRGB(18, 20, 26),
+        sidebar = Color3.fromRGB(23, 26, 34),
+        surface = Color3.fromRGB(29, 33, 43),
+        elevated = Color3.fromRGB(38, 43, 56),
+        hover = Color3.fromRGB(48, 54, 70),
+        hairline = Color3.fromRGB(54, 61, 78),
+        focus = Color3.fromRGB(225, 48, 66),
 
-        text = Color3.fromRGB(240, 242, 245),
-        subtext = Color3.fromRGB(145, 153, 165),
-        muted = Color3.fromRGB(96, 103, 114),
+        text = Color3.fromRGB(244, 246, 250),
+        subtext = Color3.fromRGB(158, 167, 182),
+        muted = Color3.fromRGB(104, 113, 128),
 
-        accent = Color3.fromRGB(238, 240, 244),
-        accentFg = Color3.fromRGB(16, 17, 20),
+        accent = Color3.fromRGB(225, 48, 66),
+        accentHover = Color3.fromRGB(242, 64, 82),
+        accentFg = Color3.fromRGB(255, 255, 255),
 
-        pos = Color3.fromRGB(72, 208, 148),
-        posBg = Color3.fromRGB(22, 45, 36),
-        neg = Color3.fromRGB(236, 106, 106),
-        negBg = Color3.fromRGB(49, 25, 28),
-        warn = Color3.fromRGB(232, 186, 104),
-        warnBg = Color3.fromRGB(47, 38, 22)
+        mm2Red = Color3.fromRGB(225, 48, 66),
+        mm2RedBg = Color3.fromRGB(56, 22, 28),
+        mm2Blue = Color3.fromRGB(86, 178, 248),
+        mm2BlueBg = Color3.fromRGB(22, 42, 62),
+        svGold = Color3.fromRGB(255, 200, 87),
+        svGoldBg = Color3.fromRGB(54, 43, 20),
+
+        pos = Color3.fromRGB(56, 212, 138),
+        posBg = Color3.fromRGB(20, 48, 36),
+        neg = Color3.fromRGB(240, 84, 96),
+        negBg = Color3.fromRGB(56, 22, 28),
+        warn = Color3.fromRGB(255, 196, 78),
+        warnBg = Color3.fromRGB(54, 42, 20),
+
+        rarityGodly = Color3.fromRGB(224, 64, 251),
+        rarityAncient = Color3.fromRGB(255, 179, 0),
+        rarityVintage = Color3.fromRGB(250, 204, 21),
+        rarityLegendary = Color3.fromRGB(239, 68, 68),
+        rarityRare = Color3.fromRGB(34, 197, 94),
+        rarityUncommon = Color3.fromRGB(56, 189, 248),
+        rarityCommon = Color3.fromRGB(156, 163, 175)
     }
 
     local State = {
@@ -123,6 +140,7 @@ local ok, failure = xpcall(function()
         itemsList = {},
         loaded = false,
         loading = false,
+        lastFetchAt = 0,
         supremeStamp = "-",
         mm2Stamp = "-",
         supremeStale = true,
@@ -174,6 +192,7 @@ local ok, failure = xpcall(function()
         compact = false,
         showTags = true,
         autoQueue = false,
+        currencyMode = "BOTH", -- "BOTH", "SV", "MV"
         favs = {},
         recent = {},
         wishlist = {},
@@ -186,14 +205,29 @@ local ok, failure = xpcall(function()
 
     local UI = {}
 
+    local function stripRichText(s)
+        return tostring(s or ""):gsub("<[^>]+>", "")
+    end
+
+    local function escapeRichText(s)
+        return tostring(s or "")
+            :gsub("&", "&amp;")
+            :gsub("<", "&lt;")
+            :gsub(">", "&gt;")
+    end
+
     local function trim(s)
-        return tostring(s or ""):match("^%s*(.-)%s*$")
+        return stripRichText(s):match("^%s*(.-)%s*$")
     end
 
     local function normalize(s)
         local clean = trim(s):lower()
+        clean = clean:gsub("&", " and ")
         clean = clean:gsub("^c%.%s*", "chroma ")
         clean = clean:gsub("^c%s+", "chroma ")
+        if clean:find("%(chroma%)") or clean:find("%[chroma%]") then
+            clean = "chroma " .. clean:gsub("%(chroma%)", ""):gsub("%[chroma%]", "")
+        end
         return (clean:gsub("[^%w]", ""))
     end
 
@@ -222,6 +256,37 @@ local ok, failure = xpcall(function()
         end
         intPart = intPart:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
         return sign .. intPart .. fracPart
+    end
+
+    local function getRarityInfo(row)
+        if not row then return Palette.hairline, false end
+        local nameLow = tostring(row.name or ""):lower()
+        local catLow = tostring(row.category or ""):lower()
+        local isChroma = nameLow:find("chroma", 1, true) ~= nil or catLow:find("chroma", 1, true) ~= nil
+        if isChroma then return Palette.rarityGodly, true end
+        if catLow:find("ancient", 1, true) then return Palette.rarityAncient, false end
+        if catLow:find("godl", 1, true) then return Palette.rarityGodly, false end
+        if catLow:find("vintage", 1, true) then return Palette.rarityVintage, false end
+        if catLow:find("legend", 1, true) then return Palette.rarityLegendary, false end
+        if catLow:find("rare", 1, true) and not catLow:find("uncommon", 1, true) then return Palette.rarityRare, false end
+        if catLow:find("uncommon", 1, true) then return Palette.rarityUncommon, false end
+        if catLow:find("common", 1, true) then return Palette.rarityCommon, false end
+        local v = row.supreme or row.mm2 or 0
+        if v >= 500 then return Palette.rarityAncient, false end
+        if v >= 15 then return Palette.rarityGodly, false end
+        if v >= 3 then return Palette.rarityLegendary, false end
+        return Palette.hairline, false
+    end
+
+    local function formatCurrencyRich(sVal, mVal, shortLabels)
+        local sTag = shortLabels and "S" or "SV"
+        local mTag = shortLabels and "M" or "MV"
+        local mode = Prefs.currencyMode or "BOTH"
+        local sPart = '<font color="#FFC857"><b>' .. sTag .. '</b></font> ' .. formatVal(sVal)
+        local mPart = '<font color="#56B2F8"><b>' .. mTag .. '</b></font> ' .. formatVal(mVal)
+        if mode == "SV" then return sPart end
+        if mode == "MV" then return mPart end
+        return sPart .. '  <font color="#687180">|</font>  ' .. mPart
     end
 
     local function attach(signal, fn, bucket)
@@ -285,6 +350,8 @@ local ok, failure = xpcall(function()
                         if v >= 0 and v < 20000 then Prefs[k] = v end
                     elseif k == "btnX" then
                         if v >= -1 and v < 20000 then Prefs[k] = v end
+                    elseif k == "currencyMode" then
+                        if v == "BOTH" or v == "SV" or v == "MV" then Prefs[k] = v end
                     else
                         Prefs[k] = v
                     end
@@ -321,16 +388,30 @@ local ok, failure = xpcall(function()
         or http_request or request
     if type(reqFn) ~= "function" then reqFn = nil end
 
+    local function withCacheBust(url)
+        local sep = url:find("?", 1, true) and "&" or "?"
+        return url .. sep .. "_cb=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
+    end
+
     function Net.fetch(url)
+        local freshUrl = withCacheBust(url)
         if reqFn then
-            local okReq, resp = pcall(reqFn, {Url = url, Method = "GET", Headers = {Accept = "*/*"}})
+            local okReq, resp = pcall(reqFn, {
+                Url = freshUrl,
+                Method = "GET",
+                Headers = {
+                    Accept = "*/*",
+                    ["Cache-Control"] = "no-cache, no-store, must-revalidate",
+                    Pragma = "no-cache"
+                }
+            })
             if okReq and type(resp) == "table" then
                 local status = tonumber(resp.StatusCode or resp.Status or (resp.Success and 200))
                 local body = resp.Body or resp.body
                 if status == 200 and type(body) == "string" and #body > 0 then return body end
             end
         end
-        local okGet, body = pcall(function() return game:HttpGet(url) end)
+        local okGet, body = pcall(function() return game:HttpGet(freshUrl, true) end)
         return (okGet and type(body) == "string" and #body > 0) and body or nil
     end
 
@@ -358,6 +439,19 @@ local ok, failure = xpcall(function()
         return fields
     end
 
+    local function registerAliases(index, row)
+        local k = normalize(row.name)
+        if k == "" then return end
+        index[k] = row
+        if k:sub(1, 6) == "chroma" then
+            local base = k:sub(7)
+            if base ~= "" then
+                if not index[base .. "chroma"] then index[base .. "chroma"] = row end
+                if not index["c" .. base] then index["c" .. base] = row end
+            end
+        end
+    end
+
     local function parseSupreme(csv)
         if not csv then return nil end
         local data, count, header = {}, 0, true
@@ -375,7 +469,7 @@ local ok, failure = xpcall(function()
                     if name ~= "" and value then
                         local k = normalize(name)
                         if k ~= "" then
-                            data[k] = {
+                            local row = {
                                 name = name,
                                 supreme = value,
                                 category = trim(f[2]),
@@ -385,6 +479,7 @@ local ok, failure = xpcall(function()
                                 stability = trim(f[7]),
                                 origin = trim(f[8] or "")
                             }
+                            registerAliases(data, row)
                             count = count + 1
                         end
                     end
@@ -404,10 +499,15 @@ local ok, failure = xpcall(function()
                 if k ~= "" then
                     local row = index[k]
                     if not row then
-                        row = {name = item.name}
-                        index[k] = row
+                        row = {name = trim(item.name), category = trim(item.category or item.rarity or "")}
+                        registerAliases(index, row)
                     end
-                    row.mm2 = parseNum(item.mm2)
+                    local mm2Val = parseNum(item.mm2 or item.mv)
+                    if mm2Val then row.mm2 = mm2Val end
+                    if not row.supreme then
+                        local fallbackSup = parseNum(item.supreme or item.sv or item.value)
+                        if fallbackSup then row.supreme = fallbackSup end
+                    end
                     if type(item.aliases) == "table" then
                         for _, alias in ipairs(item.aliases) do
                             local a = normalize(alias)
@@ -451,11 +551,12 @@ local ok, failure = xpcall(function()
         Data.index = sup
         rebuildItemsList(sup)
         Data.loaded = true
+        if not fromCache then Data.lastFetchAt = os.time() end
         Data.supremeStamp = haveSup and tostring(meta and meta.last_updated or "-"):sub(1, 10) or "Offline"
         Data.mm2Stamp = haveMM2 and tostring(archive.updatedAt or "-"):sub(1, 10) or "Offline"
         local sd, md = ageDays(Data.supremeStamp), ageDays(Data.mm2Stamp)
-        Data.supremeStale = (not sd) or sd > 7
-        Data.mm2Stale = (not md) or md > 14
+        Data.supremeStale = (not sd) or sd > 4
+        Data.mm2Stale = (not md) or md > 7
         Data.lastError = fromCache and "Offline cache" or (not haveSup and "Supreme unavailable" or nil)
         for _, cb in ipairs(Data.listeners) do pcall(cb) end
         return true
@@ -470,6 +571,7 @@ local ok, failure = xpcall(function()
     function Net.loadPrices()
         if Data.loading or not State.alive then return end
         Data.loading = true
+        for _, cb in ipairs(Data.listeners) do pcall(cb) end
         local csv = Net.fetch(Config.URL_SUPREME)
         local meta = readJson(Net.fetch(Config.URL_META))
         local archive = readJson(Net.fetch(Config.URL_MM2))
@@ -478,7 +580,7 @@ local ok, failure = xpcall(function()
             if old then archive = old.archive end
         end
         if not State.alive then Data.loading = false; return end
-        local parsed = parseSupreme(csv)
+        local parsed = parseSupreme(csv) or {}
         if not commitPrices(parsed, meta, archive, false) then
             Data.lastError = "Offline - using cached snapshot"
             if not Data.loaded then Net.readCache() end
@@ -487,6 +589,16 @@ local ok, failure = xpcall(function()
         end
         Data.loading = false
         for _, cb in ipairs(Data.listeners) do pcall(cb) end
+    end
+
+    local function ensureFreshPrices(maxAgeSec)
+        if Data.loading or not State.alive then return end
+        if os.time() - Data.lastFetchAt > (maxAgeSec or 120) then
+            task.spawn(function()
+                pcall(Net.loadPrices)
+                Data.loading = false
+            end)
+        end
     end
 
     local function lookup(name)
@@ -503,7 +615,7 @@ local ok, failure = xpcall(function()
         if not row or not row.mm2 then return nil end
         if row.supreme and row.mm2 > 10 and row.supreme > 10 then
             local a, b = math.max(row.mm2, row.supreme), math.min(row.mm2, row.supreme)
-            if a / b > 8 then return nil end
+            if a / b > 30 then return nil end
         end
         return row.mm2
     end
@@ -516,7 +628,7 @@ local ok, failure = xpcall(function()
     end
 
     local function corner(obj, r)
-        return mk("UICorner", {CornerRadius = UDim.new(0, r or 8)}, obj)
+        return mk("UICorner", {CornerRadius = UDim.new(0, r or 7)}, obj)
     end
 
     local function stroke(obj, color, trans, thickness)
@@ -526,6 +638,21 @@ local ok, failure = xpcall(function()
             Thickness = thickness or 1,
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         }, obj)
+    end
+
+    local function applyChromaGradient(target)
+        local existing = target:FindFirstChild("ChromaGrad")
+        if existing then existing:Destroy() end
+        return mk("UIGradient", {
+            Name = "ChromaGrad",
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 85, 110)),
+                ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 205, 85)),
+                ColorSequenceKeypoint.new(0.50, Color3.fromRGB(85, 235, 145)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(85, 185, 255)),
+                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(215, 105, 255))
+            })
+        }, target)
     end
 
     local function pad(obj, t, r, b, l)
@@ -559,7 +686,7 @@ local ok, failure = xpcall(function()
         local p = {
             BackgroundTransparency = 1,
             Text = tostring(text or ""),
-            Font = Enum.Font.Gotham,
+            Font = Enum.Font.GothamMedium,
             TextSize = 12,
             TextColor3 = Palette.text,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -579,8 +706,8 @@ local ok, failure = xpcall(function()
         local bg = isPrimary and Palette.accent
             or (isDanger and Palette.negBg
             or (isGhost and Palette.surface or Palette.elevated))
-        local bgHover = isPrimary and Color3.fromRGB(255, 255, 255)
-            or (isDanger and Color3.fromRGB(68, 32, 36)
+        local bgHover = isPrimary and Palette.accentHover
+            or (isDanger and Color3.fromRGB(76, 28, 36)
             or Palette.hover)
         local fg = isPrimary and Palette.accentFg
             or (isDanger and Palette.neg
@@ -588,7 +715,7 @@ local ok, failure = xpcall(function()
 
         local p = {
             Text = tostring(text or ""),
-            Font = Enum.Font.GothamMedium,
+            Font = Enum.Font.GothamBold,
             TextSize = 11,
             TextColor3 = fg,
             BackgroundColor3 = bg,
@@ -599,7 +726,10 @@ local ok, failure = xpcall(function()
         }
         for k, v in pairs(props or {}) do p[k] = v end
         local b = mk("TextButton", p, parent)
-        corner(b, 7)
+        corner(b, 6)
+        if not isGhost then
+            stroke(b, isPrimary and Palette.mm2Red or Palette.hairline, 0.25, 1)
+        end
 
         attach(b.MouseEnter, function()
             tween(b, {
@@ -632,19 +762,19 @@ local ok, failure = xpcall(function()
             BackgroundColor3 = Palette.elevated,
             TextColor3 = Palette.text,
             PlaceholderColor3 = Palette.muted,
-            Font = Enum.Font.Gotham,
+            Font = Enum.Font.GothamMedium,
             TextSize = 12,
             TextXAlignment = Enum.TextXAlignment.Left,
             BorderSizePixel = 0
         }
         for k, v in pairs(props or {}) do p[k] = v end
         local box = mk("TextBox", p, parent)
-        corner(box, 7)
+        corner(box, 6)
         local st = stroke(box, Palette.hairline, 0, 1)
         pad(box, 0, 10, 0, 10)
 
         attach(box.Focused, function()
-            tween(st, {Color = Palette.focus}, 0.12)
+            tween(st, {Color = Palette.mm2Red}, 0.12)
         end)
         attach(box.FocusLost, function()
             tween(st, {Color = Palette.hairline}, 0.12)
@@ -656,17 +786,18 @@ local ok, failure = xpcall(function()
         local state = initialState == true
         local trackBtn = mk("TextButton", {
             Size = UDim2.fromOffset(38, 20),
-            BackgroundColor3 = state and Palette.accent or Palette.elevated,
+            BackgroundColor3 = state and Palette.mm2Red or Palette.elevated,
             Text = "",
             AutoButtonColor = false,
             BorderSizePixel = 0
         }, parent)
         corner(trackBtn, 10)
+        stroke(trackBtn, state and Palette.mm2Red or Palette.hairline, 0.2, 1)
 
         local thumb = mk("Frame", {
             Size = UDim2.fromOffset(14, 14),
             Position = state and UDim2.fromOffset(21, 3) or UDim2.fromOffset(3, 3),
-            BackgroundColor3 = state and Palette.accentFg or Palette.subtext,
+            BackgroundColor3 = state and Color3.fromRGB(255, 255, 255) or Palette.subtext,
             BorderSizePixel = 0
         }, trackBtn)
         corner(thumb, 7)
@@ -674,10 +805,10 @@ local ok, failure = xpcall(function()
         attach(trackBtn.MouseButton1Click, function()
             if not State.alive then return end
             state = not state
-            tween(trackBtn, {BackgroundColor3 = state and Palette.accent or Palette.elevated}, 0.14)
+            tween(trackBtn, {BackgroundColor3 = state and Palette.mm2Red or Palette.elevated}, 0.14)
             tween(thumb, {
                 Position = state and UDim2.fromOffset(21, 3) or UDim2.fromOffset(3, 3),
-                BackgroundColor3 = state and Palette.accentFg or Palette.subtext
+                BackgroundColor3 = state and Color3.fromRGB(255, 255, 255) or Palette.subtext
             }, 0.14)
             if onToggle then onToggle(state) end
         end, bucket)
@@ -757,37 +888,37 @@ local ok, failure = xpcall(function()
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     }, playerGui))
 
-    -- Toast Pill
+    -- Toast Pill (MM2 Styled)
     UI.toast = mk("Frame", {
-        Position = UDim2.new(0.5, -140, 0, 16),
-        Size = UDim2.fromOffset(280, 44),
-        BackgroundColor3 = Palette.surface,
+        Position = UDim2.new(0.5, -145, 0, 16),
+        Size = UDim2.fromOffset(290, 46),
+        BackgroundColor3 = Palette.canvas,
         BorderSizePixel = 0,
         Visible = false,
         ZIndex = 90
     }, UI.root)
-    corner(UI.toast, 10)
-    stroke(UI.toast, Palette.hairline, 0, 1)
+    corner(UI.toast, 8)
+    UI.toastStroke = stroke(UI.toast, Palette.mm2Red, 0.15, 1.5)
 
-    UI.toastDot = mk("Frame", {
-        Position = UDim2.fromOffset(14, 18),
-        Size = UDim2.fromOffset(8, 8),
+    UI.toastAccent = mk("Frame", {
+        Position = UDim2.fromOffset(0, 0),
+        Size = UDim2.new(0, 4, 1, 0),
         BackgroundColor3 = Palette.pos,
         BorderSizePixel = 0,
         ZIndex = 92
     }, UI.toast)
-    corner(UI.toastDot, 4)
+    corner(UI.toastAccent, 4)
 
     UI.toastTitle = label(UI.toast, "", {
-        Position = UDim2.fromOffset(30, 6),
-        Size = UDim2.new(1, -40, 0, 16),
-        Font = Enum.Font.GothamBold,
+        Position = UDim2.fromOffset(14, 6),
+        Size = UDim2.new(1, -22, 0, 16),
+        Font = Enum.Font.GothamBlack,
         TextSize = 11,
         ZIndex = 92
     })
     UI.toastBody = label(UI.toast, "", {
-        Position = UDim2.fromOffset(30, 22),
-        Size = UDim2.new(1, -40, 0, 15),
+        Position = UDim2.fromOffset(14, 23),
+        Size = UDim2.new(1, -22, 0, 15),
         TextSize = 10,
         TextColor3 = Palette.subtext,
         ZIndex = 92
@@ -796,13 +927,15 @@ local ok, failure = xpcall(function()
     local function notify(title, body, tint)
         State.toastId = State.toastId + 1
         local id = State.toastId
-        UI.toastDot.BackgroundColor3 = tint or Palette.pos
-        UI.toastTitle.Text = tostring(title or "Carbon X")
+        local c = tint or Palette.pos
+        UI.toastAccent.BackgroundColor3 = c
+        UI.toastStroke.Color = c
+        UI.toastTitle.Text = tostring(title or "MM2 Carbon X")
         UI.toastBody.Text = tostring(body or "")
         UI.toast.Visible = true
         if Prefs.animations and not Prefs.lowPower then
-            UI.toast.Position = UDim2.new(0.5, -140, 0, 6)
-            tween(UI.toast, {Position = UDim2.new(0.5, -140, 0, 16)}, 0.16)
+            UI.toast.Position = UDim2.new(0.5, -145, 0, 6)
+            tween(UI.toast, {Position = UDim2.new(0.5, -145, 0, 16)}, 0.16)
         end
         task.delay(2.4, function()
             if State.alive and State.toastId == id then
@@ -811,23 +944,44 @@ local ok, failure = xpcall(function()
         end)
     end
 
-    -- Floating Launcher Pill
-    local startBtnX = Prefs.btnX >= 0 and Prefs.btnX or math.max(16, State.screenSize.X - 126)
+    -- Floating Launcher Pill (MM2 Crimson & Obsidian Badge)
+    local startBtnX = Prefs.btnX >= 0 and Prefs.btnX or math.max(16, State.screenSize.X - 134)
     UI.launcher = mk("TextButton", {
         Name = "CarbonLauncher",
         Position = UDim2.fromOffset(startBtnX, Prefs.btnY),
-        Size = UDim2.fromOffset(110, 34),
+        Size = UDim2.fromOffset(118, 34),
         BackgroundColor3 = Palette.sidebar,
         Text = "",
         AutoButtonColor = false,
         BorderSizePixel = 0,
         ZIndex = 60
     }, UI.root)
-    corner(UI.launcher, 17)
-    stroke(UI.launcher, Palette.hairline, 0, 1)
+    corner(UI.launcher, 8)
+    stroke(UI.launcher, Palette.mm2Red, 0.2, 1.5)
+
+    UI.launcherTag = label(UI.launcher, "MM2", {
+        Position = UDim2.fromOffset(8, 7),
+        Size = UDim2.fromOffset(30, 20),
+        BackgroundTransparency = 0,
+        BackgroundColor3 = Palette.mm2Red,
+        Font = Enum.Font.GothamBlack,
+        TextSize = 9,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextXAlignment = Enum.TextXAlignment.Center,
+        ZIndex = 62
+    })
+    corner(UI.launcherTag, 5)
+
+    label(UI.launcher, "VALUES", {
+        Position = UDim2.fromOffset(44, 0),
+        Size = UDim2.new(1, -62, 1, 0),
+        Font = Enum.Font.GothamBlack,
+        TextSize = 11,
+        ZIndex = 62
+    })
 
     UI.launcherDot = mk("Frame", {
-        Position = UDim2.fromOffset(13, 13),
+        Position = UDim2.new(1, -15, 0.5, -4),
         Size = UDim2.fromOffset(8, 8),
         BackgroundColor3 = Palette.subtext,
         BorderSizePixel = 0,
@@ -835,60 +989,63 @@ local ok, failure = xpcall(function()
     }, UI.launcher)
     corner(UI.launcherDot, 4)
 
-    label(UI.launcher, "Carbon X", {
-        Position = UDim2.fromOffset(27, 0),
-        Size = UDim2.new(1, -35, 1, 0),
-        Font = Enum.Font.GothamBold,
-        TextSize = 11,
-        ZIndex = 62
-    })
-
     local didDragLauncher = makeDraggable(UI.launcher, UI.launcher, function(x, y)
         Prefs.btnX = math.floor(x)
         Prefs.btnY = math.floor(y)
         Store.savePrefs()
     end)
 
-    -- Live Trade HUD
+    -- Live Trade HUD (Styled like MM2 Trade Overlay)
     UI.hud = mk("Frame", {
         Name = "TradeHUD",
         Position = UDim2.fromOffset(Prefs.hudX, Prefs.hudY),
-        Size = UDim2.fromOffset(264, 102),
+        Size = UDim2.fromOffset(286, 124),
         BackgroundColor3 = Palette.canvas,
         BorderSizePixel = 0,
         Visible = false,
         ZIndex = 50
     }, UI.root)
-    corner(UI.hud, 10)
-    stroke(UI.hud, Palette.hairline, 0, 1)
+    corner(UI.hud, 8)
+    UI.hudStroke = stroke(UI.hud, Palette.hairline, 0, 1.5)
     UI.hudScale = mk("UIScale", {Scale = 1}, UI.hud)
 
     UI.hudTopBar = mk("Frame", {
         Size = UDim2.new(1, 0, 0, 32),
-        BackgroundTransparency = 1,
+        BackgroundColor3 = Palette.sidebar,
+        BorderSizePixel = 0,
         Active = true,
         ZIndex = 52
     }, UI.hud)
+    corner(UI.hudTopBar, 8)
 
-    UI.hudTitle = label(UI.hudTopBar, "Active Trade", {
+    mk("Frame", {
+        Position = UDim2.fromOffset(0, 0),
+        Size = UDim2.fromOffset(4, 32),
+        BackgroundColor3 = Palette.mm2Red,
+        BorderSizePixel = 0,
+        ZIndex = 53
+    }, UI.hudTopBar)
+
+    UI.hudTitle = label(UI.hudTopBar, "MM2 TRADE", {
         Position = UDim2.fromOffset(12, 0),
-        Size = UDim2.new(1, -110, 1, 0),
-        Font = Enum.Font.GothamBold,
+        Size = UDim2.new(1, -114, 1, 0),
+        Font = Enum.Font.GothamBlack,
         TextSize = 11,
         ZIndex = 53
     })
 
-    UI.hudBadge = label(UI.hudTopBar, "Fair", {
-        Position = UDim2.new(1, -96, 0, 6),
-        Size = UDim2.fromOffset(62, 20),
+    UI.hudBadge = label(UI.hudTopBar, "FAIR", {
+        Position = UDim2.new(1, -98, 0, 6),
+        Size = UDim2.fromOffset(64, 20),
         BackgroundTransparency = 0,
         BackgroundColor3 = Palette.elevated,
-        Font = Enum.Font.GothamBold,
+        Font = Enum.Font.GothamBlack,
         TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Center,
         ZIndex = 53
     })
-    corner(UI.hudBadge, 6)
+    corner(UI.hudBadge, 5)
+    UI.hudBadgeStroke = stroke(UI.hudBadge, Palette.hairline, 0.2, 1)
 
     UI.hudCollapse = button(UI.hudTopBar, "-", "ghost", {
         Position = UDim2.new(1, -30, 0, 5),
@@ -909,51 +1066,101 @@ local ok, failure = xpcall(function()
         ZIndex = 52
     }, UI.hud)
 
-
     mk("Frame", {
-        Position = UDim2.fromOffset(12, 0),
-        Size = UDim2.new(1, -24, 0, 1),
+        Position = UDim2.fromOffset(0, 0),
+        Size = UDim2.new(1, 0, 0, 1),
         BackgroundColor3 = Palette.hairline,
         BorderSizePixel = 0,
         ZIndex = 53
     }, UI.hudBody)
 
-    local function hudRow(y, caption)
-        label(UI.hudBody, caption, {
-            Position = UDim2.fromOffset(12, y), Size = UDim2.fromOffset(44, 20),
-            Font = Enum.Font.GothamBold, TextSize = 10, TextColor3 = Palette.subtext, ZIndex = 53
+    local function hudRow(y, caption, roleColor)
+        local badge = label(UI.hudBody, caption, {
+            Position = UDim2.fromOffset(10, y + 2),
+            Size = UDim2.fromOffset(44, 18),
+            BackgroundTransparency = 0,
+            BackgroundColor3 = Palette.elevated,
+            Font = Enum.Font.GothamBlack,
+            TextSize = 9,
+            TextColor3 = roleColor,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            ZIndex = 53
         })
+        corner(badge, 4)
+
         local s = label(UI.hudBody, "-", {
-            Position = UDim2.fromOffset(56, y), Size = UDim2.fromOffset(100, 20),
-            Font = Enum.Font.GothamMedium, TextSize = 12,
-            TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 53
+            Position = UDim2.fromOffset(60, y),
+            Size = UDim2.fromOffset(108, 22),
+            Font = Enum.Font.GothamBold,
+            TextSize = 11,
+            RichText = true,
+            TextXAlignment = Enum.TextXAlignment.Right,
+            ZIndex = 53
         })
         local m = label(UI.hudBody, "-", {
-            Position = UDim2.fromOffset(160, y), Size = UDim2.fromOffset(92, 20),
-            Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = Palette.subtext,
-            TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 53
+            Position = UDim2.fromOffset(172, y),
+            Size = UDim2.fromOffset(104, 22),
+            Font = Enum.Font.GothamBold,
+            TextSize = 11,
+            RichText = true,
+            TextColor3 = Palette.subtext,
+            TextXAlignment = Enum.TextXAlignment.Right,
+            ZIndex = 53
         })
         return s, m
     end
-    UI.ownS, UI.ownM = hudRow(6, "YOU")
-    UI.themS, UI.themM = hudRow(28, "THEM")
+    UI.ownS, UI.ownM = hudRow(6, "YOU", Palette.mm2Blue)
+    UI.themS, UI.themM = hudRow(30, "THEM", Palette.mm2Red)
+
+    -- Visual Value Balance Bar (Sheriff Blue vs Offer Result)
+    UI.hudBarBg = mk("Frame", {
+        Position = UDim2.fromOffset(10, 56),
+        Size = UDim2.new(1, -20, 0, 6),
+        BackgroundColor3 = Palette.elevated,
+        BorderSizePixel = 0,
+        ZIndex = 53
+    }, UI.hudBody)
+    corner(UI.hudBarBg, 3)
+
+    UI.hudBarMine = mk("Frame", {
+        Size = UDim2.fromScale(0.5, 1),
+        BackgroundColor3 = Palette.mm2Blue,
+        BorderSizePixel = 0,
+        ZIndex = 54
+    }, UI.hudBarBg)
+    corner(UI.hudBarMine, 3)
+
+    UI.hudBarTheirs = mk("Frame", {
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.fromScale(1, 0),
+        Size = UDim2.fromScale(0.5, 1),
+        BackgroundColor3 = Palette.pos,
+        BorderSizePixel = 0,
+        ZIndex = 54
+    }, UI.hudBarBg)
+    corner(UI.hudBarTheirs, 3)
 
     UI.hudDiff = label(UI.hudBody, "DIFF  -", {
-        Position = UDim2.fromOffset(12, 50), Size = UDim2.new(1, -24, 0, 16),
-        TextSize = 10, TextColor3 = Palette.subtext, ZIndex = 53
+        Position = UDim2.fromOffset(10, 66),
+        Size = UDim2.new(1, -20, 0, 18),
+        Font = Enum.Font.GothamBold,
+        TextSize = 10,
+        RichText = true,
+        TextColor3 = Palette.subtext,
+        ZIndex = 53
     })
 
     UI.hudWarnBar = mk("Frame", {
-        Position = UDim2.fromOffset(12, 70),
-        Size = UDim2.new(1, -24, 0, 20),
+        Position = UDim2.fromOffset(10, 88),
+        Size = UDim2.new(1, -20, 0, 20),
         BackgroundColor3 = Palette.warnBg,
         BorderSizePixel = 0,
         Visible = false,
         ZIndex = 53
     }, UI.hudBody)
-    corner(UI.hudWarnBar, 6)
+    corner(UI.hudWarnBar, 5)
     UI.hudWarnText = label(UI.hudWarnBar, "", {
-        Size = UDim2.new(1, 0, 1, 0), TextSize = 10, TextColor3 = Palette.warn,
+        Size = UDim2.new(1, 0, 1, 0), Font = Enum.Font.GothamBold, TextSize = 10, TextColor3 = Palette.warn,
         TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54
     })
 
@@ -962,12 +1169,12 @@ local ok, failure = xpcall(function()
         if State.hudCollapsed then
             h = 32
         else
-            h = (Prefs.compact and 88 or 102) + (UI.hudWarnBar.Visible and 24 or 0)
+            h = (Prefs.compact and 100 or 120) + (UI.hudWarnBar.Visible and 24 or 0)
         end
         UI.hudBody.Visible = not State.hudCollapsed
         UI.hudDiff.Visible = not Prefs.compact
-        UI.hudWarnBar.Position = UDim2.fromOffset(12, Prefs.compact and 52 or 70)
-        UI.hud.Size = UDim2.fromOffset(264, h)
+        UI.hudWarnBar.Position = UDim2.fromOffset(10, Prefs.compact and 66 or 88)
+        UI.hud.Size = UDim2.fromOffset(286, h)
     end
     UI.applyHudSize()
 
@@ -978,7 +1185,7 @@ local ok, failure = xpcall(function()
     end)
 
     ----------------------------------------------------------------------
-    -- Cleanup (registered early so a later failure never leaves half a UI)
+    -- Cleanup
     ----------------------------------------------------------------------
     local function cleanup()
         State.alive = false
@@ -1007,11 +1214,25 @@ local ok, failure = xpcall(function()
         if q == "" then return nil end
         local exact = lookup(text)
         if exact then return exact end
+
+        local bestPrefix, bestPrefixLen
+        local bestSub, bestSubLen
         for _, row in ipairs(Data.itemsList) do
             row._k = row._k or normalize(row.name)
-            if row._k:find(q, 1, true) then return row end
+            local k = row._k
+            if k:sub(1, #q) == q then
+                if not bestPrefixLen or #k < bestPrefixLen then
+                    bestPrefix = row
+                    bestPrefixLen = #k
+                end
+            elseif k:find(q, 1, true) then
+                if not bestSubLen or #k < bestSubLen then
+                    bestSub = row
+                    bestSubLen = #k
+                end
+            end
         end
-        return nil
+        return bestPrefix or bestSub
     end
 
     function Util.ago(ts)
@@ -1052,7 +1273,7 @@ local ok, failure = xpcall(function()
     end
 
     ----------------------------------------------------------------------
-    -- Trade reading (read-only: only looks at the game's own trade GUI)
+    -- Trade reading (read-only: reads MM2's trade GUI)
     ----------------------------------------------------------------------
     local Trade = {tick = 0, closing = nil}
     local TRADE_SCREENS = {"TradeGUI", "TradeGUI_Phone"}
@@ -1084,20 +1305,40 @@ local ok, failure = xpcall(function()
         return true
     end
 
+    local function isChromaSlot(slot, labelObj, rawName)
+        if rawName:lower():match("^chroma%s") or rawName:lower():match("^c%.%s") then
+            return true
+        end
+        local chroma = nested(slot, "Tags", "Chroma") or slot:FindFirstChild("Chroma", true)
+        if chroma and chroma:IsA("GuiObject") and chroma.Visible then
+            return true
+        end
+        local grad = labelObj:FindFirstChildOfClass("UIGradient")
+        if grad and grad.Enabled and #grad.Color.Keypoints >= 3 then
+            return true
+        end
+        return false
+    end
+
     local function readSlot(slot)
-        local v = nested(slot, "ItemName", "Label")
+        local v = nested(slot, "ItemName", "Label") or slot:FindFirstChild("ItemName", true)
+        if v and not v:IsA("TextLabel") then
+            v = v:FindFirstChildOfClass("TextLabel")
+        end
         if not v or not v:IsA("TextLabel") then return nil end
         local name = trim(v.Text)
         if name == "" then return nil end
-        local chroma = nested(slot, "Tags", "Chroma")
-        if chroma and chroma:IsA("GuiObject") and chroma.Visible and not name:lower():match("^chroma%s") then
+        if isChromaSlot(slot, v, name) and not name:lower():match("^chroma%s") then
             name = "Chroma " .. name
         end
         local amount = 1
-        local amountLabel = nested(slot, "Container", "Amount")
-        if amountLabel and type(amountLabel.Text) == "string" then
-            local digits = amountLabel.Text:match("[xX×]%s*(%d+)")
-            amount = math.max(1, math.min(9999, tonumber(digits) or 1))
+        local amountLabel = nested(slot, "Container", "Amount") or slot:FindFirstChild("Amount", true)
+        if amountLabel and amountLabel:IsA("TextLabel") and amountLabel.Visible and type(amountLabel.Text) == "string" then
+            local cleanAmt = trim(amountLabel.Text)
+            local digits = cleanAmt:match("[xX×]%s*(%d+)") or cleanAmt:match("^(%d+)$")
+            if digits then
+                amount = math.max(1, math.min(9999, tonumber(digits) or 1))
+            end
         end
         return name, amount
     end
@@ -1106,14 +1347,26 @@ local ok, failure = xpcall(function()
         local b = State.badges[slot]
         if b and b.Parent == slot then return b end
         b = mk("TextLabel", {
-            Name = "CarbonXValueTag", Text = "", Font = Enum.Font.GothamBold, TextSize = 9,
-            TextColor3 = Palette.text, BackgroundColor3 = Palette.canvas, BackgroundTransparency = 0.1,
-            BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -3, 1, -3),
-            Size = UDim2.fromOffset(92, 16), TextTruncate = Enum.TextTruncate.AtEnd,
-            Visible = false, Active = false, Selectable = false, ZIndex = 75
+            Name = "CarbonXValueTag",
+            Text = "",
+            RichText = true,
+            Font = Enum.Font.GothamBlack,
+            TextSize = 9,
+            TextColor3 = Palette.text,
+            BackgroundColor3 = Palette.canvas,
+            BackgroundTransparency = 0.08,
+            BorderSizePixel = 0,
+            AnchorPoint = Vector2.new(0.5, 1),
+            Position = UDim2.new(0.5, 0, 1, -2),
+            Size = UDim2.new(1, -6, 0, 16),
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            Visible = false,
+            Active = false,
+            Selectable = false,
+            ZIndex = 75
         }, slot)
-        corner(b, 5)
-        stroke(b, Palette.hairline, 0, 1)
+        corner(b, 4)
+        stroke(b, Palette.hairline, 0.1, 1.2)
         State.badges[slot] = b
         track(b)
         return b
@@ -1140,15 +1393,27 @@ local ok, failure = xpcall(function()
                     out.sig[#out.sig + 1] = normalize(name) .. "x" .. amount
                     if Prefs.showTags then
                         local tag = tagFor(slot)
-                        local width = slot.AbsoluteSize and slot.AbsoluteSize.X or 95
-                        if width > 0 and width < 92 then
-                            tag.Size = UDim2.fromOffset(math.max(37, width - 5), 16)
-                            tag.Text = "S " .. formatVal(s)
-                        else
-                            tag.Size = UDim2.fromOffset(110, 16)
-                            tag.Text = "S " .. formatVal(s) .. "  M " .. formatVal(m)
+                        local rarityCol, isChroma = getRarityInfo(row)
+                        local st = tag:FindFirstChildOfClass("UIStroke")
+                        if st then
+                            st.Color = row and rarityCol or Palette.warn
+                            if isChroma then
+                                applyChromaGradient(st)
+                            else
+                                local oldGrad = st:FindFirstChild("ChromaGrad")
+                                if oldGrad then oldGrad:Destroy() end
+                            end
                         end
-                        tag.TextColor3 = s and Palette.text or Palette.warn
+
+                        local sTotal = s and (s * amount) or nil
+                        local mTotal = m and (m * amount) or nil
+                        local width = slot.AbsoluteSize and slot.AbsoluteSize.X or 95
+                        if width > 0 and width < 82 then
+                            tag.Text = '<font color="#FFC857"><b>S</b></font> ' .. formatVal(sTotal)
+                        else
+                            tag.Text = formatCurrencyRich(sTotal, mTotal, true)
+                        end
+                        tag.TextColor3 = row and Palette.text or Palette.warn
                         tag.Visible = true
                     elseif existing then
                         existing.Visible = false
@@ -1162,7 +1427,7 @@ local ok, failure = xpcall(function()
     end
 
     function Trade.hideTags()
-        for slot, tag in pairs(State.badges) do
+        for _, tag in pairs(State.badges) do
             pcall(function() tag.Visible = false end)
         end
     end
@@ -1191,7 +1456,6 @@ local ok, failure = xpcall(function()
             local s, o, t = check(playerGui:FindFirstChild(nm))
             if s then return s, o, t end
         end
-        -- Renamed ScreenGui in another mode: scan sparingly (every ~2s), it is the costly path.
         if Trade.tick % 6 == 0 then
             for _, screen in ipairs(playerGui:GetChildren()) do
                 if screen ~= UI.root and screen:IsA("ScreenGui") and screen.Enabled ~= false then
@@ -1239,7 +1503,7 @@ local ok, failure = xpcall(function()
         end
         Store.addHistory(entry)
         if confirmed then
-            notify("Trade completed", entry.delta and ("Value change " .. Util.signed(entry.delta) .. " S") or "Confirmed by game UI", Palette.pos)
+            notify("Trade completed", entry.delta and ("Value change " .. Util.signed(entry.delta) .. " SV") or "Confirmed by MM2 UI", Palette.pos)
         end
         if UI.win and UI.win.Visible and State.currentTab == "Trade" and UI.selectTab then
             pcall(UI.selectTab, "Trade")
@@ -1253,10 +1517,10 @@ local ok, failure = xpcall(function()
     local function updateHud(snap)
         local mine, other = snap.mine, snap.other
         local incomplete = mine.missS > 0 or other.missS > 0
-        UI.ownS.Text = "S " .. fmtSide(mine.s, mine.missS)
-        UI.ownM.Text = "M " .. fmtSide(mine.m, mine.missM)
-        UI.themS.Text = "S " .. fmtSide(other.s, other.missS)
-        UI.themM.Text = "M " .. fmtSide(other.m, other.missM)
+        UI.ownS.Text = '<font color="#FFC857">SV</font> ' .. fmtSide(mine.s, mine.missS)
+        UI.ownM.Text = '<font color="#56B2F8">MV</font> ' .. fmtSide(mine.m, mine.missM)
+        UI.themS.Text = '<font color="#FFC857">SV</font> ' .. fmtSide(other.s, other.missS)
+        UI.themM.Text = '<font color="#56B2F8">MV</font> ' .. fmtSide(other.m, other.missM)
         UI.ownS.TextColor3 = mine.missS > 0 and Palette.warn or Palette.text
         UI.themS.TextColor3 = other.missS > 0 and Palette.warn or Palette.text
 
@@ -1266,13 +1530,13 @@ local ok, failure = xpcall(function()
         if mine.count + other.count == 0 then
             txt, fg, bg = "EMPTY", Palette.subtext, Palette.elevated
         elseif not Data.loaded then
-            txt, fg, bg = "WAIT", Palette.warn, Palette.warnBg
+            txt, fg, bg = "SYNC...", Palette.warn, Palette.warnBg
         elseif incomplete then
-            txt, fg, bg = "N/A", Palette.warn, Palette.warnBg
+            txt, fg, bg = "PARTIAL", Palette.warn, Palette.warnBg
         else
             local base = math.max(mine.s, other.s)
             if math.abs(d) <= math.max(2, base * 0.05) then
-                txt, fg, bg = "FAIR", Palette.subtext, Palette.elevated
+                txt, fg, bg = "FAIR", Palette.mm2Blue, Palette.mm2BlueBg
             elseif d > 0 then
                 txt, fg, bg = "WIN", Palette.pos, Palette.posBg
             else
@@ -1282,29 +1546,46 @@ local ok, failure = xpcall(function()
         UI.hudBadge.Text = txt
         UI.hudBadge.TextColor3 = fg
         UI.hudBadge.BackgroundColor3 = bg
+        UI.hudBadgeStroke.Color = fg
+        UI.hudStroke.Color = (txt == "WIN" or txt == "LOSS") and fg or Palette.hairline
 
-        if incomplete or not Data.loaded then
-            UI.hudDiff.Text = "DIFF  incomplete"
+        -- Update visual balance bar
+        local totalSum = mine.s + other.s
+        if totalSum > 0 then
+            local ratio = math.clamp(mine.s / totalSum, 0.06, 0.94)
+            UI.hudBarMine.Size = UDim2.fromScale(ratio, 1)
+            UI.hudBarTheirs.Size = UDim2.fromScale(1 - ratio, 1)
+            UI.hudBarTheirs.BackgroundColor3 = d >= 0 and Palette.pos or Palette.mm2Red
         else
-            UI.hudDiff.Text = "DIFF  " .. Util.signed(d) .. " S   /   " .. Util.signed(dm) .. " M"
+            UI.hudBarMine.Size = UDim2.fromScale(0.5, 1)
+            UI.hudBarTheirs.Size = UDim2.fromScale(0.5, 1)
+            UI.hudBarTheirs.BackgroundColor3 = Palette.muted
         end
 
-        local warn, danger
-        if os.clock() < State.warningUntil then
-            warn, danger = "Their offer just changed - re-check", true
-        elseif not Data.loaded then
-            warn = "Prices are loading"
+        if not Data.loaded then
+            UI.hudDiff.Text = "DIFF  loading live values..."
         elseif incomplete then
-            warn = "Some items have no price"
+            UI.hudDiff.Text = 'DIFF  <font color="#FFC857">' .. Util.signed(d) .. ' SV</font> (partial)  /  <font color="#56B2F8">' .. Util.signed(dm) .. ' MV</font>'
+        else
+            UI.hudDiff.Text = 'DIFF  <font color="#FFC857">' .. Util.signed(d) .. ' SV</font>   /   <font color="#56B2F8">' .. Util.signed(dm) .. ' MV</font>'
+        end
+
+        local warnMsg, danger
+        if os.clock() < State.warningUntil then
+            warnMsg, danger = "Their offer changed - verify items!", true
+        elseif not Data.loaded then
+            warnMsg = "Syncing live MM2 values..."
+        elseif incomplete then
+            warnMsg = "Unlisted item detected in trade"
         elseif Data.supremeStale then
-            warn = "Price data may be outdated"
+            warnMsg = "Value list may be outdated"
         elseif mine.s > 0 and other.s < mine.s * 0.75 then
-            warn = "You give noticeably more"
+            warnMsg = "Warning: You are overpaying (>25%)"
         end
         local wasVisible = UI.hudWarnBar.Visible
-        UI.hudWarnBar.Visible = warn ~= nil
-        if warn then
-            UI.hudWarnText.Text = warn
+        UI.hudWarnBar.Visible = warnMsg ~= nil
+        if warnMsg then
+            UI.hudWarnText.Text = warnMsg
             UI.hudWarnText.TextColor3 = danger and Palette.neg or Palette.warn
             UI.hudWarnBar.BackgroundColor3 = danger and Palette.negBg or Palette.warnBg
         end
@@ -1317,11 +1598,14 @@ local ok, failure = xpcall(function()
         local screen, our, theirs = Trade.locate()
         if screen then
             if Trade.closing then Trade.finish(false) end
+            if not State.tradeActive then
+                ensureFreshPrices(120)
+            end
             local snap = {mine = summarizeOffer(our), other = summarizeOffer(theirs)}
             local sig = table.concat(snap.other.sig, "|")
             if State.tradeActive and State.prevOther ~= "" and sig ~= State.prevOther then
                 State.warningUntil = os.clock() + 5
-                notify("Their offer changed", "Re-check the items before accepting", Palette.warn)
+                notify("Offer changed!", "Re-check their items before accepting", Palette.warn)
             end
             State.prevOther = sig
             State.tradeActive = true
@@ -1351,7 +1635,7 @@ local ok, failure = xpcall(function()
         end
     end
 
-    -- Rare items other players are visibly holding on this server (public info, stored locally).
+    -- Rare items other players are visibly holding on this server
     local lastSightWrite = 0
     local function scanSightings()
         local jobId = tostring(game.JobId or "")
@@ -1369,7 +1653,8 @@ local ok, failure = xpcall(function()
                             if not cur or now - cur.at > 60 then
                                 Data.sightings[key] = {
                                     jobId = jobId, placeId = game.PlaceId, at = now,
-                                    name = row.name, value = row.supreme, player = tostring(p.DisplayName or p.Name)
+                                    name = row.name, value = row.supreme, category = row.category,
+                                    player = tostring(p.DisplayName or p.Name)
                                 }
                                 changed = true
                             end
@@ -1394,9 +1679,9 @@ local ok, failure = xpcall(function()
     end
 
     ----------------------------------------------------------------------
-    -- Main window
+    -- Main window (MM2 Styled)
     ----------------------------------------------------------------------
-    local WIN_W, WIN_H = 560, 360
+    local WIN_W, WIN_H = 576, 372
     local TAB_NAMES = {"Trade", "Values", "Compare", "Inventory", "Servers", "Settings"}
     local Tabs = {}
     local Win = {order = 0, tabButtons = {}}
@@ -1416,33 +1701,42 @@ local ok, failure = xpcall(function()
         ClipsDescendants = true,
         ZIndex = 70
     }, UI.root)
-    corner(UI.win, 12)
-    stroke(UI.win, Palette.hairline, 0, 1)
+    corner(UI.win, 10)
+    stroke(UI.win, Palette.hairline, 0, 1.5)
     Win.scale = mk("UIScale", {Scale = 1}, UI.win)
 
     local header = mk("Frame", {
-        Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Palette.sidebar,
+        Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Palette.sidebar,
         BorderSizePixel = 0, Active = true, ZIndex = 72
     }, UI.win)
     mk("Frame", {
-        Position = UDim2.new(0, 0, 1, -1), Size = UDim2.new(1, 0, 0, 1),
-        BackgroundColor3 = Palette.hairline, BorderSizePixel = 0, ZIndex = 73
+        Position = UDim2.new(0, 0, 1, -2), Size = UDim2.new(1, 0, 0, 2),
+        BackgroundColor3 = Palette.mm2Red, BorderSizePixel = 0, ZIndex = 73
     }, header)
+
+    local mm2Chip = label(header, "MM2", {
+        Position = UDim2.fromOffset(12, 9), Size = UDim2.fromOffset(32, 20),
+        BackgroundTransparency = 0, BackgroundColor3 = Palette.mm2Red,
+        Font = Enum.Font.GothamBlack, TextSize = 9, TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 74
+    })
+    corner(mm2Chip, 4)
+
     label(header, "CARBON X", {
-        Position = UDim2.fromOffset(14, 0), Size = UDim2.fromOffset(100, 36),
-        Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 73
+        Position = UDim2.fromOffset(50, 0), Size = UDim2.fromOffset(86, 36),
+        Font = Enum.Font.GothamBlack, TextSize = 12, ZIndex = 73
     })
     Win.title = label(header, "Trade", {
-        Position = UDim2.fromOffset(134, 0), Size = UDim2.new(1, -190, 1, 0),
-        Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = Palette.subtext, ZIndex = 73
+        Position = UDim2.fromOffset(138, 0), Size = UDim2.new(1, -190, 1, 0),
+        Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = Palette.subtext, ZIndex = 73
     })
-    button(header, "x", "ghost", {
-        Position = UDim2.new(1, -34, 0, 6), Size = UDim2.fromOffset(24, 24), TextSize = 13, ZIndex = 74
+    button(header, "X", "ghost", {
+        Position = UDim2.new(1, -34, 0, 6), Size = UDim2.fromOffset(24, 24), TextSize = 12, ZIndex = 74
     }, function() UI.setWindow(false) end)
     makeDraggable(UI.win, header)
 
     Win.side = mk("Frame", {
-        Position = UDim2.fromOffset(0, 36), Size = UDim2.new(0, 120, 1, -36),
+        Position = UDim2.fromOffset(0, 38), Size = UDim2.new(0, 124, 1, -38),
         BackgroundColor3 = Palette.sidebar, BorderSizePixel = 0, ZIndex = 71
     }, UI.win)
     mk("Frame", {
@@ -1450,19 +1744,19 @@ local ok, failure = xpcall(function()
         BackgroundColor3 = Palette.hairline, BorderSizePixel = 0, ZIndex = 72
     }, Win.side)
     Win.indicator = mk("Frame", {
-        Position = UDim2.fromOffset(0, 18), Size = UDim2.fromOffset(3, 14),
-        BackgroundColor3 = Palette.accent, BorderSizePixel = 0, ZIndex = 74
+        Position = UDim2.fromOffset(0, 18), Size = UDim2.fromOffset(3, 16),
+        BackgroundColor3 = Palette.mm2Red, BorderSizePixel = 0, ZIndex = 74
     }, Win.side)
     corner(Win.indicator, 2)
 
     Win.status = label(Win.side, "", {
-        Position = UDim2.new(0, 10, 1, -44), Size = UDim2.new(1, -20, 0, 36),
+        Position = UDim2.new(0, 10, 1, -48), Size = UDim2.new(1, -20, 0, 40),
         TextSize = 9, TextColor3 = Palette.muted, TextWrapped = true,
         TextYAlignment = Enum.TextYAlignment.Bottom, TextTruncate = Enum.TextTruncate.None, ZIndex = 73
     })
 
     Win.content = mk("Frame", {
-        Position = UDim2.fromOffset(120, 36), Size = UDim2.new(1, -120, 1, -36),
+        Position = UDim2.fromOffset(124, 38), Size = UDim2.new(1, -124, 1, -38),
         BackgroundTransparency = 1, ZIndex = 71
     }, UI.win)
 
@@ -1475,7 +1769,7 @@ local ok, failure = xpcall(function()
                 b.BackgroundColor3 = Palette.elevated
                 b.TextColor3 = active and Palette.text or Palette.subtext
                 if active then
-                    tween(Win.indicator, {Position = UDim2.fromOffset(0, 10 + (i - 1) * 34 + 8)}, 0.14)
+                    tween(Win.indicator, {Position = UDim2.fromOffset(0, 10 + (i - 1) * 34 + 7)}, 0.14)
                 end
             end
         end
@@ -1485,15 +1779,15 @@ local ok, failure = xpcall(function()
         local b = mk("TextButton", {
             Name = name .. "Tab", Position = UDim2.fromOffset(8, 10 + (i - 1) * 34),
             Size = UDim2.new(1, -16, 0, 30), BackgroundColor3 = Palette.elevated, BackgroundTransparency = 1,
-            Text = name, Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = Palette.subtext,
+            Text = name, Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = Palette.subtext,
             TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, BorderSizePixel = 0, ZIndex = 73
         }, Win.side)
-        corner(b, 7)
+        corner(b, 6)
         pad(b, 0, 0, 0, 12)
         Win.tabButtons[name] = b
         attach(b.MouseEnter, function()
             if State.currentTab ~= name then
-                b.BackgroundTransparency = 0.4
+                b.BackgroundTransparency = 0.45
                 b.TextColor3 = Palette.text
             end
         end)
@@ -1515,7 +1809,7 @@ local ok, failure = xpcall(function()
         Win.refresh = nil
         Win.page = mk("ScrollingFrame", {
             Name = "Page", Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0,
-            ScrollBarThickness = 3, ScrollBarImageColor3 = Palette.focus,
+            ScrollBarThickness = 3, ScrollBarImageColor3 = Palette.mm2Red,
             CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollingDirection = Enum.ScrollingDirection.Y, ZIndex = 72
         }, Win.content)
@@ -1529,8 +1823,8 @@ local ok, failure = xpcall(function()
     ----------------------------------------------------------------------
     local function heading(parent, text)
         return label(parent, string.upper(text), {
-            Size = UDim2.new(1, 0, 0, 16), Font = Enum.Font.GothamBold, TextSize = 10,
-            TextColor3 = Palette.muted, LayoutOrder = ord(), ZIndex = 73
+            Size = UDim2.new(1, 0, 0, 16), Font = Enum.Font.GothamBlack, TextSize = 10,
+            TextColor3 = Palette.subtext, LayoutOrder = ord(), ZIndex = 73
         })
     end
 
@@ -1539,7 +1833,7 @@ local ok, failure = xpcall(function()
             Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
             BackgroundColor3 = Palette.surface, BorderSizePixel = 0, LayoutOrder = ord(), ZIndex = 73
         }, parent)
-        corner(c, 8)
+        corner(c, 7)
         stroke(c, Palette.hairline, 0, 1)
         pad(c, 10)
         vlist(c, 6)
@@ -1550,11 +1844,11 @@ local ok, failure = xpcall(function()
         local f = mk("Frame", {
             Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, LayoutOrder = ord(), ZIndex = 74
         }, parent)
-        label(f, key, {Size = UDim2.new(0.5, 0, 1, 0), TextColor3 = Palette.subtext, TextSize = 11, ZIndex = 75})
+        label(f, key, {Size = UDim2.new(0.48, 0, 1, 0), TextColor3 = Palette.subtext, TextSize = 11, ZIndex = 75})
         label(f, tostring(value), {
-            Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0.5, 1),
+            Position = UDim2.fromScale(0.48, 0), Size = UDim2.fromScale(0.52, 1),
             TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = color or Palette.text,
-            TextSize = 11, Font = Enum.Font.GothamMedium, ZIndex = 75
+            TextSize = 11, Font = Enum.Font.GothamBold, ZIndex = 75
         })
         return f
     end
@@ -1566,25 +1860,33 @@ local ok, failure = xpcall(function()
         })
     end
 
-    local function listRow(parent, title, right, sub, rightColor)
-        local h = sub and 38 or 28
+    local function listRow(parent, title, right, sub, rightColor, accentBarColor)
+        local h = sub and 40 or 30
         local f = mk("Frame", {
             Size = UDim2.new(1, 0, 0, h), BackgroundColor3 = Palette.surface, BorderSizePixel = 0,
             LayoutOrder = ord(), ZIndex = 73
         }, parent)
         corner(f, 6)
+        stroke(f, Palette.hairline, 0.35, 1)
+        if accentBarColor then
+            local bar = mk("Frame", {
+                Size = UDim2.new(0, 3, 1, 0), BackgroundColor3 = accentBarColor,
+                BorderSizePixel = 0, ZIndex = 74
+            }, f)
+            corner(bar, 3)
+        end
         label(f, title, {
-            Position = UDim2.fromOffset(10, sub and 3 or 0), Size = UDim2.new(1, -120, 0, sub and 18 or h),
+            Position = UDim2.fromOffset(11, sub and 4 or 0), Size = UDim2.new(1, -125, 0, sub and 18 or h),
             Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 74
         })
         label(f, right or "", {
-            Position = UDim2.new(1, -110, 0, sub and 3 or 0), Size = UDim2.fromOffset(100, sub and 18 or h),
-            TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = rightColor or Palette.subtext,
-            Font = Enum.Font.GothamMedium, TextSize = 11, ZIndex = 74
+            Position = UDim2.new(1, -115, 0, sub and 4 or 0), Size = UDim2.fromOffset(105, sub and 18 or h),
+            TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = rightColor or Palette.svGold,
+            Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 74
         })
         if sub then
             label(f, sub, {
-                Position = UDim2.fromOffset(10, 21), Size = UDim2.new(1, -20, 0, 14),
+                Position = UDim2.fromOffset(11, 22), Size = UDim2.new(1, -22, 0, 14),
                 TextSize = 10, TextColor3 = Palette.muted, ZIndex = 74
             })
         end
@@ -1621,14 +1923,14 @@ local ok, failure = xpcall(function()
         local active = false
         local b = mk("TextButton", {
             Text = text, Size = UDim2.fromOffset(w, 26), BackgroundColor3 = Palette.elevated,
-            TextColor3 = Palette.subtext, Font = Enum.Font.GothamMedium, TextSize = 11,
+            TextColor3 = Palette.subtext, Font = Enum.Font.GothamBold, TextSize = 11,
             AutoButtonColor = false, BorderSizePixel = 0, LayoutOrder = ord(), ZIndex = 74
         }, parent)
-        corner(b, 7)
+        corner(b, 6)
         local function paint(hover)
             tween(b, {
-                BackgroundColor3 = active and Palette.accent or (hover and Palette.hover or Palette.elevated),
-                TextColor3 = active and Palette.accentFg or (hover and Palette.text or Palette.subtext)
+                BackgroundColor3 = active and Palette.mm2Red or (hover and Palette.hover or Palette.elevated),
+                TextColor3 = active and Color3.fromRGB(255, 255, 255) or (hover and Palette.text or Palette.subtext)
             }, 0.1)
         end
         attach(b.MouseEnter, function() paint(true) end, State.tabConns)
@@ -1646,15 +1948,15 @@ local ok, failure = xpcall(function()
         local on = isOn()
         local b = mk("TextButton", {
             Text = text, Position = UDim2.new(1, -rightOffset, 0.5, -10), Size = UDim2.fromOffset(w, 20),
-            BackgroundColor3 = on and Palette.accent or Palette.elevated,
-            TextColor3 = on and Palette.accentFg or Palette.subtext,
+            BackgroundColor3 = on and Palette.mm2Red or Palette.elevated,
+            TextColor3 = on and Color3.fromRGB(255, 255, 255) or Palette.subtext,
             Font = Enum.Font.GothamBold, TextSize = 9, AutoButtonColor = false, BorderSizePixel = 0, ZIndex = 75
         }, parent)
         corner(b, 5)
         attach(b.MouseButton1Click, function()
             on = not on
-            b.BackgroundColor3 = on and Palette.accent or Palette.elevated
-            b.TextColor3 = on and Palette.accentFg or Palette.subtext
+            b.BackgroundColor3 = on and Palette.mm2Red or Palette.elevated
+            b.TextColor3 = on and Color3.fromRGB(255, 255, 255) or Palette.subtext
             onChange(on)
         end, State.tabConns)
         return b
@@ -1683,18 +1985,19 @@ local ok, failure = xpcall(function()
     -- Tabs
     ----------------------------------------------------------------------
     Tabs.Trade = function(page)
-        heading(page, "Price data")
+        heading(page, "Live MM2 value feeds")
         local c = card(page)
-        kv(c, "Supreme", Data.loaded and (Data.supremeStamp .. (Data.supremeStale and "  (old)" or "")) or "-",
-            Data.supremeStale and Palette.warn or Palette.pos)
-        kv(c, "MM2 archive", Data.loaded and (Data.mm2Stamp .. (Data.mm2Stale and "  (old)" or "")) or "-",
-            Data.mm2Stale and Palette.warn or Palette.pos)
+        kv(c, "Supreme Values (SV)", Data.loaded and (Data.supremeStamp .. (Data.supremeStale and "  (old)" or "")) or "-",
+            Data.supremeStale and Palette.warn or Palette.svGold)
+        kv(c, "MM2Values (MV)", Data.loaded and (Data.mm2Stamp .. (Data.mm2Stale and "  (old)" or "")) or "-",
+            Data.mm2Stale and Palette.warn or Palette.mm2Blue)
         kv(c, "Items indexed", tostring(#Data.itemsList))
-        kv(c, "Status", Data.loading and "Refreshing..." or (Data.lastError or "OK"),
-            (Data.lastError and not Data.loading) and Palette.warn or Palette.text)
+        local syncInfo = Data.loading and "Syncing live..."
+            or (Data.lastError or (Data.lastFetchAt > 0 and ("Live  (" .. Util.ago(Data.lastFetchAt) .. ")") or "OK"))
+        kv(c, "Feed status", syncInfo, (Data.lastError and not Data.loading) and Palette.warn or Palette.pos)
         local actions = hrow(c, 28)
-        button(actions, "Refresh prices", "primary", {Size = UDim2.fromOffset(110, 26), LayoutOrder = ord(), ZIndex = 75}, function()
-            notify("Prices", "Refreshing...", Palette.subtext)
+        button(actions, "Sync now", "primary", {Size = UDim2.fromOffset(96, 26), LayoutOrder = ord(), ZIndex = 75}, function()
+            notify("Live Sync", "Fetching latest MM2 prices...", Palette.svGold)
             task.spawn(function()
                 pcall(Net.loadPrices)
                 Data.loading = false
@@ -1707,7 +2010,7 @@ local ok, failure = xpcall(function()
             copyOrNotify(Config.OFFICIAL_SITE, "Link copied")
         end, State.tabConns)
 
-        heading(page, "Rare items seen on this server")
+        heading(page, "High-tier items spotted on server")
         local list = {}
         local now = os.time()
         for _, s in pairs(Data.sightings) do
@@ -1717,11 +2020,12 @@ local ok, failure = xpcall(function()
         end
         table.sort(list, function(a, b) return (a.value or 0) > (b.value or 0) end)
         if #list == 0 then
-            note(page, "Nothing noticed yet. Items others hold in hand appear here.")
+            note(page, "No high-tier items spotted yet. Equipped weapons appear here.")
         else
             for i = 1, math.min(#list, 5) do
                 local s = list[i]
-                listRow(page, tostring(s.name), "S " .. formatVal(s.value), tostring(s.player) .. "  -  " .. Util.ago(s.at))
+                local rCol = getRarityInfo({name = s.name, category = s.category, supreme = s.value})
+                listRow(page, tostring(s.name), formatVal(s.value) .. " SV", tostring(s.player) .. "  •  " .. Util.ago(s.at), Palette.svGold, rCol)
             end
         end
 
@@ -1734,10 +2038,11 @@ local ok, failure = xpcall(function()
                 local when = tostring(h.at)
                 pcall(function() when = os.date("%H:%M", h.at) end)
                 local confirmed = h.status == "CONFIRMED"
+                local dCol = h.delta and (h.delta > 0 and Palette.pos or (h.delta < 0 and Palette.neg or Palette.subtext)) or Palette.subtext
                 listRow(page, when .. "   " .. (confirmed and "COMPLETED" or "CLOSED"),
-                    h.delta and (Util.signed(h.delta) .. " S") or "-",
+                    h.delta and (Util.signed(h.delta) .. " SV") or "-",
                     "gave: " .. tostring(h.give or "-") .. "  /  got: " .. tostring(h.get or "-"),
-                    h.delta and (h.delta > 0 and Palette.pos or (h.delta < 0 and Palette.neg or Palette.subtext)) or Palette.subtext)
+                    dCol, dCol)
             end
             button(page, "Clear history", "danger", {Size = UDim2.fromOffset(100, 26), LayoutOrder = ord(), ZIndex = 75}, function()
                 Data.history = {}
@@ -1749,7 +2054,7 @@ local ok, failure = xpcall(function()
     end
 
     Tabs.Values = function(page)
-        local box = inputBox(page, "Search items (e.g. harvester, chroma luger)", State.valueSearch, {
+        local box = inputBox(page, "Search MM2 items (e.g. Harvester, Chroma Luger)", State.valueSearch, {
             Size = UDim2.new(1, 0, 0, 30), LayoutOrder = ord(), ZIndex = 73
         })
         local chips = hrow(page, 26)
@@ -1772,21 +2077,33 @@ local ok, failure = xpcall(function()
         setters[State.valueFilter](true)
 
         local function itemRow(row)
+            local rarityCol, isChroma = getRarityInfo(row)
             local f = mk("Frame", {
-                Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = Palette.surface, BorderSizePixel = 0,
+                Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = Palette.surface, BorderSizePixel = 0,
                 LayoutOrder = ord(), ZIndex = 73
             }, holder)
             corner(f, 6)
+            stroke(f, Palette.hairline, 0.35, 1)
+
+            local bar = mk("Frame", {
+                Size = UDim2.new(0, 3, 1, 0), BackgroundColor3 = rarityCol,
+                BorderSizePixel = 0, ZIndex = 74
+            }, f)
+            corner(bar, 3)
+            if isChroma then applyChromaGradient(bar) end
+
             label(f, row.name, {
-                Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -214, 1, 0),
-                Font = Enum.Font.GothamMedium, TextSize = 11, ZIndex = 74
+                Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -222, 1, 0),
+                Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 74
             })
-            label(f, "S " .. formatVal(row.supreme), {
-                Position = UDim2.new(1, -204, 0, 0), Size = UDim2.fromOffset(62, 30),
+            label(f, '<font color="#FFC857">SV</font> ' .. formatVal(row.supreme), {
+                Position = UDim2.new(1, -212, 0, 0), Size = UDim2.fromOffset(66, 32),
+                RichText = true, Font = Enum.Font.GothamBold,
                 TextXAlignment = Enum.TextXAlignment.Right, TextSize = 11, ZIndex = 74
             })
-            label(f, "M " .. formatVal(safeMM2(row)), {
-                Position = UDim2.new(1, -140, 0, 0), Size = UDim2.fromOffset(58, 30),
+            label(f, '<font color="#56B2F8">MV</font> ' .. formatVal(safeMM2(row)), {
+                Position = UDim2.new(1, -144, 0, 0), Size = UDim2.fromOffset(62, 32),
+                RichText = true, Font = Enum.Font.GothamBold,
                 TextXAlignment = Enum.TextXAlignment.Right, TextSize = 11, TextColor3 = Palette.subtext, ZIndex = 74
             })
             miniToggle(f, "FAV", 78, 34, function() return Prefs.favs[row.name] == true end, function(on)
@@ -1804,7 +2121,7 @@ local ok, failure = xpcall(function()
         render = function()
             clearChildren(holder)
             if not Data.loaded then
-                note(holder, "Prices are loading...")
+                note(holder, "Syncing live MM2 prices...")
                 info.Text = ""
                 return
             end
@@ -1826,8 +2143,8 @@ local ok, failure = xpcall(function()
                     end
                 end
             end
-            info.Text = "Showing " .. shown .. " of " .. total
-            if total == 0 then note(holder, "No items match.") end
+            info.Text = "Showing " .. shown .. " of " .. total .. " items"
+            if total == 0 then note(holder, "No MM2 items match.") end
         end
 
         local token = 0
@@ -1844,29 +2161,30 @@ local ok, failure = xpcall(function()
     end
 
     Tabs.Compare = function(page)
-        local function build(initial, key)
+        local function build(initial)
             local box = inputBox(page, "Item name", initial, {Size = UDim2.new(1, 0, 0, 30), LayoutOrder = ord(), ZIndex = 73})
             local c = card(page)
             return box, c
         end
 
-        local boxA, cardA = build(State.compareA, "compareA")
-        local boxB, cardB = build(State.compareB, "compareB")
+        local boxA, cardA = build(State.compareA)
+        local boxB, cardB = build(State.compareB)
         local summary = card(page)
 
         local function fill(c, text)
             clearChildren(c)
             local row = Util.resolve(text)
             if not row then
-                note(c, Data.loaded and "Item not found." or "Prices are loading...")
+                note(c, Data.loaded and "Item not found." or "Syncing prices...")
                 return nil
             end
-            label(c, row.name, {
-                Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 12,
-                LayoutOrder = ord(), ZIndex = 74
+            local rarityCol = getRarityInfo(row)
+            label(c, row.name .. ((row.category and row.category ~= "") and ("  [" .. row.category .. "]") or ""), {
+                Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBlack, TextSize = 12,
+                TextColor3 = rarityCol, LayoutOrder = ord(), ZIndex = 74
             })
-            kv(c, "Supreme value", formatVal(row.supreme))
-            kv(c, "MM2 value", formatVal(safeMM2(row)))
+            kv(c, "Supreme Value (SV)", formatVal(row.supreme), Palette.svGold)
+            kv(c, "MM2Values (MV)", formatVal(safeMM2(row)), Palette.mm2Blue)
             kv(c, "Demand", row.demand and (formatVal(row.demand) .. " / 10") or "-")
             kv(c, "Rarity", row.rarity and (formatVal(row.rarity) .. " / 10") or "-")
             kv(c, "Recent change", row.change and Util.signed(row.change) or "-",
@@ -1882,9 +2200,9 @@ local ok, failure = xpcall(function()
             clearChildren(summary)
             if a and b and a.supreme and b.supreme and a.supreme > 0 and b.supreme > 0 then
                 local ratio = a.supreme / b.supreme
-                kv(summary, a.name .. " vs " .. b.name, string.format("%.2f x", ratio))
+                kv(summary, a.name .. " vs " .. b.name, string.format("%.2f x", ratio), Palette.svGold)
                 local diff = a.supreme - b.supreme
-                kv(summary, "Difference (Supreme)", Util.signed(diff), diff > 0 and Palette.pos or (diff < 0 and Palette.neg or Palette.text))
+                kv(summary, "Difference (SV)", Util.signed(diff) .. " SV", diff > 0 and Palette.pos or (diff < 0 and Palette.neg or Palette.text))
             else
                 note(summary, "Pick two priced items to compare them.")
             end
@@ -1921,7 +2239,7 @@ local ok, failure = xpcall(function()
         button(addRow, "Add", "primary", {Size = UDim2.fromOffset(70, 30), LayoutOrder = ord(), ZIndex = 75}, function()
             local row = Util.resolve(State.invQuery)
             if not row then
-                notify("Not found", "No item matches that name", Palette.warn)
+                notify("Not found", "No MM2 item matches that name", Palette.warn)
                 return
             end
             local qty = math.floor(tonumber(State.invQty) or 1)
@@ -1960,32 +2278,39 @@ local ok, failure = xpcall(function()
                 if sv then s = s + sv * qty else missS = missS + 1 end
                 if mv then m = m + mv * qty else missM = missM + 1 end
             end
-            kv(totals, "Items", tostring(#Prefs.myItems))
-            kv(totals, "Total (Supreme)", formatVal(s) .. (missS > 0 and "+?" or ""), missS > 0 and Palette.warn or Palette.text)
-            kv(totals, "Total (MM2)", formatVal(m) .. (missM > 0 and "+?" or ""), missM > 0 and Palette.warn or Palette.text)
+            kv(totals, "Tracked items", tostring(#Prefs.myItems))
+            kv(totals, "Total Supreme (SV)", formatVal(s) .. (missS > 0 and "+?" or "") .. " SV", missS > 0 and Palette.warn or Palette.svGold)
+            kv(totals, "Total MM2Values (MV)", formatVal(m) .. (missM > 0 and "+?" or "") .. " MV", missM > 0 and Palette.warn or Palette.mm2Blue)
             if #Prefs.myItems == 0 then
-                note(holder, "Add items you own to track their combined value.")
+                note(holder, "Add items you own to track their combined MM2 value.")
                 return
             end
             for idx, it in ipairs(Prefs.myItems) do
                 local qty = tonumber(it.qty) or 1
                 local row = lookup(it.name)
+                local rarityCol = getRarityInfo(row)
                 local f = mk("Frame", {
-                    Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = Palette.surface, BorderSizePixel = 0,
+                    Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = Palette.surface, BorderSizePixel = 0,
                     LayoutOrder = ord(), ZIndex = 73
                 }, holder)
                 corner(f, 6)
+                local bar = mk("Frame", {
+                    Size = UDim2.new(0, 3, 1, 0), BackgroundColor3 = rarityCol,
+                    BorderSizePixel = 0, ZIndex = 74
+                }, f)
+                corner(bar, 3)
+
                 label(f, tostring(it.name) .. "  x" .. qty, {
-                    Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -150, 1, 0),
-                    Font = Enum.Font.GothamMedium, TextSize = 11, ZIndex = 74
+                    Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -155, 1, 0),
+                    Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 74
                 })
-                label(f, row and row.supreme and ("S " .. formatVal(row.supreme * qty)) or "no price", {
-                    Position = UDim2.new(1, -140, 0, 0), Size = UDim2.fromOffset(90, 30),
-                    TextXAlignment = Enum.TextXAlignment.Right, TextSize = 11,
-                    TextColor3 = (row and row.supreme) and Palette.text or Palette.warn, ZIndex = 74
+                label(f, row and row.supreme and (formatVal(row.supreme * qty) .. " SV") or "no price", {
+                    Position = UDim2.new(1, -145, 0, 0), Size = UDim2.fromOffset(95, 32),
+                    TextXAlignment = Enum.TextXAlignment.Right, Font = Enum.Font.GothamBold, TextSize = 11,
+                    TextColor3 = (row and row.supreme) and Palette.svGold or Palette.warn, ZIndex = 74
                 })
-                button(f, "x", "danger", {
-                    Position = UDim2.new(1, -40, 0.5, -11), Size = UDim2.fromOffset(30, 22), TextSize = 11, ZIndex = 75
+                button(f, "X", "danger", {
+                    Position = UDim2.new(1, -40, 0.5, -11), Size = UDim2.fromOffset(30, 22), TextSize = 10, ZIndex = 75
                 }, function()
                     table.remove(Prefs.myItems, idx)
                     Store.savePrefs()
@@ -2052,22 +2377,40 @@ local ok, failure = xpcall(function()
                 corner(f, 6)
                 label(f, s.label, {
                     Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -140, 1, 0),
-                    Font = Enum.Font.GothamMedium, TextSize = 11, ZIndex = 74
+                    Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 74
                 })
                 button(f, "COPY", "default", {
                     Position = UDim2.new(1, -126, 0.5, -12), Size = UDim2.fromOffset(54, 24), TextSize = 10, ZIndex = 75
                 }, function() copyOrNotify(url, "Link copied") end, State.tabConns)
-                button(f, "OPEN", "primary", {
+                button(f, "JOIN", "primary", {
                     Position = UDim2.new(1, -64, 0.5, -12), Size = UDim2.fromOffset(54, 24), TextSize = 10, ZIndex = 75
                 }, function() openLink(url, s.label) end, State.tabConns)
             end
             if #items == 0 then note(holder, "No servers in this category.") end
         end
-        note(page, Data.serverStamp .. ". Links open in your browser or Roblox app; availability is not verified.")
+        note(page, Data.serverStamp .. ". Trading server links open in browser or Roblox.")
         render()
     end
 
     Tabs.Settings = function(page)
+        heading(page, "Currency display")
+        local modeRow = hrow(page, 28)
+        local modeSetters = {}
+        for _, opt in ipairs({
+            {id = "BOTH", label = "Both (SV + MV)", w = 112},
+            {id = "SV", label = "Supreme (SV)", w = 98},
+            {id = "MV", label = "MM2Val (MV)", w = 96}
+        }) do
+            local _, set = chip(modeRow, opt.label, opt.w, function()
+                Prefs.currencyMode = opt.id
+                Store.savePrefs()
+                for id, fn in pairs(modeSetters) do fn(id == opt.id) end
+                if State.latestTrade then updateHud(State.latestTrade) end
+            end)
+            modeSetters[opt.id] = set
+        end
+        if modeSetters[Prefs.currencyMode] then modeSetters[Prefs.currencyMode](true) end
+
         heading(page, "Preferences")
         local c = card(page)
         local function setting(title, desc, key, onChange)
@@ -2090,13 +2433,13 @@ local ok, failure = xpcall(function()
                 if d:IsA("GuiObject") then d.ZIndex = 76 end
             end
         end
-        setting("Value tags", "Show prices on items in the trade window", "showTags", function(v)
+        setting("Slot value badges", "Show MM2 rarity-bordered value tags in trade slots", "showTags", function(v)
             if not v then Trade.hideTags() end
         end)
-        setting("Compact HUD", "Smaller trade summary", "compact", function() UI.applyHudSize() end)
-        setting("Animations", "Smooth hover and toast effects", "animations")
-        setting("Low power mode", "Slower refresh, no animations", "lowPower")
-        setting("Reload after teleport", "Re-run the script when you join another server", "autoQueue", function(v)
+        setting("Compact HUD", "Smaller MM2 trade summary bar", "compact", function() UI.applyHudSize() end)
+        setting("Animations", "Smooth hover and toast transitions", "animations")
+        setting("Low power mode", "Slower refresh rate, disable animations", "lowPower")
+        setting("Reload after teleport", "Re-run automatically when switching servers", "autoQueue", function(v)
             if v and not Net.queueReload() then
                 notify("Auto reload", "Not supported by this executor", Palette.warn)
             end
@@ -2107,9 +2450,9 @@ local ok, failure = xpcall(function()
         button(actions, "Reset positions", "default", {Size = UDim2.fromOffset(110, 26), LayoutOrder = ord(), ZIndex = 75}, function()
             Prefs.hudX, Prefs.hudY, Prefs.btnX, Prefs.btnY = 16, 82, -1, 82
             UI.hud.Position = UDim2.fromOffset(16, 82)
-            UI.launcher.Position = UDim2.fromOffset(math.max(16, State.screenSize.X - 126), 82)
+            UI.launcher.Position = UDim2.fromOffset(math.max(16, State.screenSize.X - 134), 82)
             Store.savePrefs()
-            notify("Positions reset", "HUD and button moved back", Palette.subtext)
+            notify("Positions reset", "HUD and button restored", Palette.subtext)
         end, State.tabConns)
         button(actions, "Unload script", "danger", {Size = UDim2.fromOffset(100, 26), LayoutOrder = ord(), ZIndex = 75}, function()
             cleanup()
@@ -2117,9 +2460,9 @@ local ok, failure = xpcall(function()
 
         heading(page, "About")
         local about = card(page)
-        kv(about, "Menu key", Config.TOGGLE_KEY.Name)
-        kv(about, "Mode", "Read-only")
-        note(about, "No trade remotes, no auto-accept. Values are estimates, not Robux.")
+        kv(about, "Menu toggle key", Config.TOGGLE_KEY.Name)
+        kv(about, "Mode", "Read-only (Safe)")
+        note(about, "Auto-syncs every 3 min and on trade start. Values are market estimates.")
     end
 
     function UI.selectTab(name)
@@ -2155,7 +2498,7 @@ local ok, failure = xpcall(function()
         refreshScreen()
         local sx, sy = State.screenSize.X, State.screenSize.Y
         Win.scale.Scale = math.clamp(math.min((sx - 16) / WIN_W, (sy - 16) / WIN_H), 0.5, 1)
-        UI.hudScale.Scale = math.clamp((sx - 16) / 264, 0.6, 1)
+        UI.hudScale.Scale = math.clamp((sx - 16) / 286, 0.6, 1)
         pcall(clampInto, UI.hud)
         pcall(clampInto, UI.launcher)
         if UI.win.Visible then pcall(clampInto, UI.win) end
@@ -2164,6 +2507,7 @@ local ok, failure = xpcall(function()
     function UI.setWindow(visible)
         if visible then
             applyLayout()
+            ensureFreshPrices(120)
             if not State.firstOpen then
                 State.firstOpen = true
                 local w, h = WIN_W * Win.scale.Scale, WIN_H * Win.scale.Scale
@@ -2183,11 +2527,11 @@ local ok, failure = xpcall(function()
     function UI.updateStatus()
         local color, text
         if not Data.loaded then
-            color, text = Palette.subtext, "Loading prices..."
+            color, text = Palette.warn, "Syncing live..."
         elseif Data.lastError or Data.supremeStale then
-            color, text = Palette.warn, (Data.lastError or "Prices may be old") .. "\nSupreme " .. Data.supremeStamp
+            color, text = Palette.warn, (Data.lastError or "Data old") .. "\nSV " .. Data.supremeStamp
         else
-            color, text = Palette.pos, "Prices OK\nSupreme " .. Data.supremeStamp
+            color, text = Palette.pos, "Live Values\nSV " .. Data.supremeStamp
         end
         State.statusText = text
         UI.launcherDot.BackgroundColor3 = color
@@ -2211,6 +2555,7 @@ local ok, failure = xpcall(function()
     Data.listeners[#Data.listeners + 1] = function()
         if not State.alive then return end
         UI.updateStatus()
+        if State.latestTrade then pcall(updateHud, State.latestTrade) end
         if UI.win.Visible and Win.refresh then pcall(Win.refresh) end
     end
 
@@ -2219,7 +2564,7 @@ local ok, failure = xpcall(function()
     ----------------------------------------------------------------------
     refreshScreen()
     if Prefs.btnX < 0 then
-        UI.launcher.Position = UDim2.fromOffset(math.max(16, State.screenSize.X - 126), Prefs.btnY)
+        UI.launcher.Position = UDim2.fromOffset(math.max(16, State.screenSize.X - 134), Prefs.btnY)
     end
     applyLayout()
     UI.updateStatus()
@@ -2247,7 +2592,7 @@ local ok, failure = xpcall(function()
         pcall(Net.loadPrices)
         Data.loading = false
         while State.alive do
-            task.wait(1200)
+            task.wait(Prefs.lowPower and 480 or 180)
             if State.alive then
                 pcall(Net.loadPrices)
                 Data.loading = false
@@ -2255,7 +2600,7 @@ local ok, failure = xpcall(function()
         end
     end)
 
-    notify("Carbon X ready", "Press " .. Config.TOGGLE_KEY.Name .. " or tap the button", Palette.pos)
+    notify("MM2 Carbon X ready", "Press " .. Config.TOGGLE_KEY.Name .. " or tap MM2 VALUES", Palette.pos)
 end, function(err)
     if debug and type(debug.traceback) == "function" then
         return debug.traceback(tostring(err), 2)
