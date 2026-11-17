@@ -1,4 +1,5 @@
--- MM2 CARBON | Ultimate Trading Intelligence Dashboard (Read-Only)
+-- MM2 CARBON v6 | Ultimate Trading Intelligence Dashboard (Read-Only)
+-- Skin: soft charcoal + white, Fortnite-inspired monochrome UI
 if not game:IsLoaded() then
     game.Loaded:Wait()
 end
@@ -58,78 +59,80 @@ local ok, failure = xpcall(function()
     }
 
     -- ========================================================================
-    -- DESIGN SYSTEM: DUAL THEMES (CARBON WHITE & CARBON DARK) + RADIUS SCALE
+    -- DESIGN SYSTEM: SOFT CHARCOAL + WHITE (FORTNITE-INSPIRED MONOCHROME)
+    -- CarbonDark   -> soft grey-black canvas, white ink, white primary CTA
+    -- CarbonLight  -> soft paper canvas, charcoal ink, charcoal primary CTA
     -- ========================================================================
     local Themes = {
-        CarbonWhite = {
-            name = "CarbonWhite",
-            canvas = Color3.fromRGB(244, 245, 248),
+        CarbonLight = {
+            name = "CarbonLight",
+            canvas = Color3.fromRGB(240, 241, 243),
             surface = Color3.fromRGB(255, 255, 255),
-            surfaceAlt = Color3.fromRGB(249, 250, 252),
-            surfaceHover = Color3.fromRGB(240, 242, 247),
-            border = Color3.fromRGB(224, 228, 236),
-            borderStrong = Color3.fromRGB(190, 198, 212),
-            shadow = Color3.fromRGB(15, 23, 42),
-            shadowAlpha = 0.93,
+            surfaceAlt = Color3.fromRGB(247, 248, 250),
+            surfaceHover = Color3.fromRGB(238, 240, 243),
+            border = Color3.fromRGB(225, 227, 232),
+            borderStrong = Color3.fromRGB(196, 200, 207),
+            shadow = Color3.fromRGB(16, 18, 22),
+            shadowAlpha = 0.42,
 
-            ink = Color3.fromRGB(15, 23, 42),
-            inkSub = Color3.fromRGB(71, 85, 105),
-            inkMuted = Color3.fromRGB(130, 142, 160),
+            ink = Color3.fromRGB(17, 18, 21),
+            inkSub = Color3.fromRGB(84, 88, 96),
+            inkMuted = Color3.fromRGB(140, 145, 154),
 
-            accent = Color3.fromRGB(15, 23, 42),
-            accentHover = Color3.fromRGB(36, 48, 74),
+            accent = Color3.fromRGB(17, 18, 21),
+            accentHover = Color3.fromRGB(42, 45, 51),
             accentFg = Color3.fromRGB(255, 255, 255),
 
-            svInk = Color3.fromRGB(168, 98, 8),
-            svBg = Color3.fromRGB(254, 247, 232),
-            mvInk = Color3.fromRGB(15, 98, 254),
-            mvBg = Color3.fromRGB(237, 244, 255),
+            svInk = Color3.fromRGB(146, 104, 34),
+            svBg = Color3.fromRGB(252, 247, 237),
+            mvInk = Color3.fromRGB(46, 92, 172),
+            mvBg = Color3.fromRGB(238, 243, 251),
 
-            pos = Color3.fromRGB(14, 130, 72),
-            posBg = Color3.fromRGB(232, 248, 240),
-            neg = Color3.fromRGB(218, 30, 40),
-            negBg = Color3.fromRGB(253, 237, 238),
-            warn = Color3.fromRGB(176, 100, 10),
-            warnBg = Color3.fromRGB(254, 245, 230)
+            pos = Color3.fromRGB(26, 122, 82),
+            posBg = Color3.fromRGB(234, 247, 241),
+            neg = Color3.fromRGB(194, 48, 56),
+            negBg = Color3.fromRGB(252, 238, 239),
+            warn = Color3.fromRGB(154, 106, 24),
+            warnBg = Color3.fromRGB(253, 246, 233)
         },
         CarbonDark = {
             name = "CarbonDark",
-            canvas = Color3.fromRGB(14, 15, 18),
-            surface = Color3.fromRGB(22, 24, 29),
-            surfaceAlt = Color3.fromRGB(18, 20, 24),
-            surfaceHover = Color3.fromRGB(31, 34, 42),
-            border = Color3.fromRGB(40, 44, 54),
-            borderStrong = Color3.fromRGB(64, 70, 84),
+            canvas = Color3.fromRGB(13, 14, 16),
+            surface = Color3.fromRGB(21, 22, 25),
+            surfaceAlt = Color3.fromRGB(17, 18, 21),
+            surfaceHover = Color3.fromRGB(30, 32, 36),
+            border = Color3.fromRGB(40, 43, 48),
+            borderStrong = Color3.fromRGB(64, 68, 75),
             shadow = Color3.fromRGB(0, 0, 0),
-            shadowAlpha = 0.72,
+            shadowAlpha = 0.62,
 
-            ink = Color3.fromRGB(241, 243, 247),
-            inkSub = Color3.fromRGB(152, 160, 175),
-            inkMuted = Color3.fromRGB(98, 106, 120),
+            ink = Color3.fromRGB(245, 246, 248),
+            inkSub = Color3.fromRGB(158, 163, 172),
+            inkMuted = Color3.fromRGB(103, 108, 117),
 
-            accent = Color3.fromRGB(241, 243, 247),
+            accent = Color3.fromRGB(245, 246, 248),
             accentHover = Color3.fromRGB(255, 255, 255),
-            accentFg = Color3.fromRGB(14, 15, 18),
+            accentFg = Color3.fromRGB(14, 15, 17),
 
-            svInk = Color3.fromRGB(245, 184, 65),
-            svBg = Color3.fromRGB(46, 37, 18),
-            mvInk = Color3.fromRGB(96, 165, 250),
-            mvBg = Color3.fromRGB(22, 36, 58),
+            svInk = Color3.fromRGB(226, 191, 128),
+            svBg = Color3.fromRGB(39, 34, 24),
+            mvInk = Color3.fromRGB(148, 178, 231),
+            mvBg = Color3.fromRGB(24, 31, 45),
 
-            pos = Color3.fromRGB(52, 211, 153),
-            posBg = Color3.fromRGB(18, 44, 35),
-            neg = Color3.fromRGB(248, 113, 113),
-            negBg = Color3.fromRGB(50, 22, 26),
-            warn = Color3.fromRGB(251, 191, 36),
-            warnBg = Color3.fromRGB(48, 38, 18)
+            pos = Color3.fromRGB(122, 200, 148),
+            posBg = Color3.fromRGB(22, 38, 29),
+            neg = Color3.fromRGB(232, 126, 126),
+            negBg = Color3.fromRGB(43, 24, 26),
+            warn = Color3.fromRGB(230, 191, 105),
+            warnBg = Color3.fromRGB(41, 35, 21)
         }
     }
 
     local Radius = {
-        control = 10,
-        card = 14,
-        panel = 18,
-        modal = 22
+        control = 8,
+        card = 10,
+        panel = 12,
+        modal = 14
     }
 
     local State = {
@@ -225,7 +228,8 @@ local ok, failure = xpcall(function()
     }
 
     local Prefs = {
-        theme = "CarbonWhite",
+        theme = "CarbonDark",
+        themeRev = 2,
         sidebarCollapsed = false,
         currencyMode = "BOTH",
         animations = true,
@@ -245,7 +249,7 @@ local ok, failure = xpcall(function()
 
     local Palette = Themes[Prefs.theme]
     local UI = {}
-    local Win = {order = 0, navButtons = {}, navBars = {}}
+    local Win = {order = 0, navButtons = {}, navBars = {}, scrollMemory = {}, pageTab = nil}
     local Tabs = {}
 
     local function stripRichText(s)
@@ -256,15 +260,25 @@ local ok, failure = xpcall(function()
         return stripRichText(s):match("^%s*(.-)%s*$")
     end
 
+    local normalizeCache, normalizeCacheSize = {}, 0
     local function normalize(s)
-        local clean = trim(s):lower()
+        local raw = tostring(s or "")
+        local cached = normalizeCache[raw]
+        if cached ~= nil then return cached end
+        local clean = trim(raw):lower()
         clean = clean:gsub("&", " and ")
         clean = clean:gsub("^c%.%s*", "chroma ")
         clean = clean:gsub("^c%s+", "chroma ")
         if clean:find("%(chroma%)") or clean:find("%[chroma%]") then
             clean = "chroma " .. clean:gsub("%(chroma%)", ""):gsub("%[chroma%]", "")
         end
-        return (clean:gsub("[^%w]", ""))
+        local out = (clean:gsub("[^%w]", ""))
+        if normalizeCacheSize >= 6000 then
+            normalizeCache, normalizeCacheSize = {}, 0
+        end
+        normalizeCache[raw] = out
+        normalizeCacheSize = normalizeCacheSize + 1
+        return out
     end
 
     local function parseNum(v)
@@ -365,7 +379,37 @@ local ok, failure = xpcall(function()
                 end
             end
         end
-        Palette = Themes[Prefs.theme] or Themes.CarbonWhite
+
+        -- v6 migration: existing users get the new charcoal/white skin once.
+        if saved and saved.themeRev ~= Prefs.themeRev then
+            Prefs.theme = "CarbonDark"
+            Prefs.themeRev = 2
+        end
+
+        -- Defensive sanitising so a corrupted settings file can never break a view.
+        if type(Prefs.favs) ~= "table" then Prefs.favs = {} end
+        if type(Prefs.wishlist) ~= "table" then Prefs.wishlist = {} end
+        if type(Prefs.recent) ~= "table" then Prefs.recent = {} end
+        for name in pairs(Prefs.favs) do
+            if type(name) ~= "string" then Prefs.favs[name] = nil end
+        end
+        for name in pairs(Prefs.wishlist) do
+            if type(name) ~= "string" then Prefs.wishlist[name] = nil end
+        end
+        local cleanItems = {}
+        for _, entry in ipairs(type(Prefs.myItems) == "table" and Prefs.myItems or {}) do
+            if type(entry) == "table" and type(entry.name) == "string" and entry.name ~= "" then
+                cleanItems[#cleanItems + 1] = {
+                    name = entry.name,
+                    qty = math.max(1, math.min(9999, math.floor(tonumber(entry.qty) or 1)))
+                }
+                if #cleanItems >= 60 then break end
+            end
+        end
+        Prefs.myItems = cleanItems
+        Store.savePrefs()
+
+        Palette = Themes[Prefs.theme] or Themes.CarbonDark
 
         local jobId, placeId = tostring(game.JobId or ""), game.PlaceId
         local sights = Store.read(Config.SIGHTINGS_FILE)
@@ -817,9 +861,9 @@ local ok, failure = xpcall(function()
 
         local bg, _, fg = getColors()
         local p = {
-            Text = tostring(text or ""),
-            Font = Enum.Font.GothamMedium,
-            TextSize = 12,
+            Text = string.upper(tostring(text or "")),
+            Font = Enum.Font.GothamBold,
+            TextSize = 11,
             TextColor3 = fg,
             BackgroundColor3 = bg,
             BackgroundTransparency = isGhost and 1 or 0,
@@ -891,7 +935,7 @@ local ok, failure = xpcall(function()
         local state = initialState == true
         local trackBtn = mk("TextButton", {
             Size = UDim2.fromOffset(40, 22),
-            BackgroundColor3 = state and Palette.accent or Palette.border,
+            BackgroundColor3 = state and Palette.accent or Palette.surfaceHover,
             Text = "",
             AutoButtonColor = false,
             BorderSizePixel = 0
@@ -901,7 +945,7 @@ local ok, failure = xpcall(function()
         local thumb = mk("Frame", {
             Size = UDim2.fromOffset(16, 16),
             Position = state and UDim2.fromOffset(21, 3) or UDim2.fromOffset(3, 3),
-            BackgroundColor3 = state and Palette.accentFg or Palette.surface,
+            BackgroundColor3 = state and Palette.accentFg or Palette.inkMuted,
             BorderSizePixel = 0
         }, trackBtn)
         corner(thumb, 8)
@@ -909,10 +953,10 @@ local ok, failure = xpcall(function()
         attach(trackBtn.MouseButton1Click, function()
             if not State.alive then return end
             state = not state
-            Motion.spring(trackBtn, {BackgroundColor3 = state and Palette.accent or Palette.border}, 0.14)
+            Motion.spring(trackBtn, {BackgroundColor3 = state and Palette.accent or Palette.surfaceHover}, 0.14)
             Motion.spring(thumb, {
                 Position = state and UDim2.fromOffset(21, 3) or UDim2.fromOffset(3, 3),
-                BackgroundColor3 = state and Palette.accentFg or Palette.surface
+                BackgroundColor3 = state and Palette.accentFg or Palette.inkMuted
             }, 0.14)
             if onToggle then onToggle(state) end
         end, bucket)
@@ -1033,7 +1077,7 @@ local ok, failure = xpcall(function()
         State.toastId = State.toastId + 1
         local id = State.toastId
         UI.toastDot.BackgroundColor3 = tint or Palette.pos
-        UI.toastTitle.Text = tostring(title or "Carbon")
+        UI.toastTitle.Text = string.upper(tostring(title or "Carbon"))
         UI.toastBody.Text = tostring(body or "")
         UI.toast.Visible = true
         if Prefs.animations and not Prefs.lowPower then
@@ -1045,6 +1089,27 @@ local ok, failure = xpcall(function()
                 UI.toast.Visible = false
             end
         end)
+    end
+
+    -- Shared link/clipboard helpers (these were referenced by the tabs but never defined).
+    local function copyOrNotify(text, successMsg)
+        if copyClipboard(text) then
+            notify("Copied", successMsg or tostring(text), Palette.pos)
+            return true
+        end
+        notify("Copy unavailable", "Clipboard is blocked in this executor", Palette.warn)
+        return false
+    end
+
+    local function openLink(url, titleText)
+        if type(url) ~= "string" or url == "" then return false end
+        if openBrowserUrl(url) then return true end
+        if copyClipboard(url) then
+            notify("Link copied", tostring(titleText or "Link") .. " — open it manually", Palette.mvInk)
+            return true
+        end
+        notify("Cannot open link", tostring(url):sub(1, 90), Palette.warn)
+        return false
     end
 
     local startBtnX = Prefs.btnX >= 0 and Prefs.btnX or math.max(16, State.screenSize.X - 134)
@@ -1070,11 +1135,11 @@ local ok, failure = xpcall(function()
     }, UI.launcher)
     corner(UI.launcherDot, 4)
 
-    UI.launcherTitle = label(UI.launcher, "Carbon", {
+    UI.launcherTitle = label(UI.launcher, "CARBON", {
         Position = UDim2.fromOffset(27, 0),
-        Size = UDim2.fromOffset(50, 34),
+        Size = UDim2.fromOffset(52, 34),
         Font = Enum.Font.GothamBold,
-        TextSize = 12,
+        TextSize = 10,
         ZIndex = 62
     })
 
@@ -1100,7 +1165,7 @@ local ok, failure = xpcall(function()
     UI.hud = mk("Frame", {
         Name = "TradeHUD",
         Position = UDim2.fromOffset(Prefs.hudX, Prefs.hudY),
-        Size = UDim2.fromOffset(300, 118),
+        Size = UDim2.fromOffset(304, 124),
         BackgroundColor3 = Palette.surface,
         BorderSizePixel = 0,
         Visible = false,
@@ -1119,11 +1184,12 @@ local ok, failure = xpcall(function()
     }, UI.hud)
     corner(UI.hudTopBar, Radius.card)
 
-    UI.hudTitle = label(UI.hudTopBar, "Trade Evaluator", {
+    UI.hudTitle = label(UI.hudTopBar, "TRADE EVALUATOR", {
         Position = UDim2.fromOffset(12, 0),
         Size = UDim2.new(1, -116, 1, 0),
         Font = Enum.Font.GothamBold,
-        TextSize = 12,
+        TextSize = 11,
+        TextColor3 = Palette.ink,
         ZIndex = 53
     })
 
@@ -1147,7 +1213,6 @@ local ok, failure = xpcall(function()
         ZIndex = 53
     }, function()
         State.hudCollapsed = not State.hudCollapsed
-        UI.hudBody.Visible = not State.hudCollapsed
         UI.hudCollapse.Text = State.hudCollapsed and "+" or "–"
         UI.applyHudSize()
     end)
@@ -1177,7 +1242,7 @@ local ok, failure = xpcall(function()
             TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 53
         })
         local m = label(UI.hudBody, "—", {
-            Position = UDim2.fromOffset(180, y), Size = UDim2.fromOffset(108, 22),
+            Position = UDim2.fromOffset(180, y), Size = UDim2.fromOffset(112, 22),
             Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = Palette.mvInk,
             TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 53
         })
@@ -1186,13 +1251,41 @@ local ok, failure = xpcall(function()
     UI.ownS, UI.ownM = hudRow(6, "YOU")
     UI.themS, UI.themM = hudRow(30, "THEM")
 
+    -- Split bar: your share of the combined SV on the left, theirs on the right.
+    UI.hudBar = mk("Frame", {
+        Position = UDim2.fromOffset(12, 56),
+        Size = UDim2.new(1, -24, 0, 6),
+        BackgroundColor3 = Palette.surfaceHover,
+        BorderSizePixel = 0,
+        ZIndex = 53
+    }, UI.hudBody)
+    corner(UI.hudBar, 3)
+
+    UI.hudMine = mk("Frame", {
+        Size = UDim2.new(0.5, -1, 1, 0),
+        BackgroundColor3 = Palette.ink,
+        BorderSizePixel = 0,
+        ZIndex = 54
+    }, UI.hudBar)
+    corner(UI.hudMine, 3)
+
+    UI.hudTheirs = mk("Frame", {
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.fromScale(1, 0),
+        Size = UDim2.new(0.5, -1, 1, 0),
+        BackgroundColor3 = Palette.inkMuted,
+        BorderSizePixel = 0,
+        ZIndex = 54
+    }, UI.hudBar)
+    corner(UI.hudTheirs, 3)
+
     UI.hudDiff = label(UI.hudBody, "NET  —", {
-        Position = UDim2.fromOffset(12, 56), Size = UDim2.new(1, -24, 0, 18),
-        Font = Enum.Font.GothamMedium, TextSize = 11, TextColor3 = Palette.inkSub, ZIndex = 53
+        Position = UDim2.fromOffset(12, 68), Size = UDim2.new(1, -24, 0, 18),
+        Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = Palette.inkSub, ZIndex = 53
     })
 
     UI.hudWarnBar = mk("Frame", {
-        Position = UDim2.fromOffset(12, 78),
+        Position = UDim2.fromOffset(12, 90),
         Size = UDim2.new(1, -24, 0, 22),
         BackgroundColor3 = Palette.warnBg,
         BorderSizePixel = 0,
@@ -1201,21 +1294,23 @@ local ok, failure = xpcall(function()
     }, UI.hudBody)
     corner(UI.hudWarnBar, 6)
     UI.hudWarnText = label(UI.hudWarnBar, "", {
-        Size = UDim2.new(1, 0, 1, 0), Font = Enum.Font.GothamMedium, TextSize = 10, TextColor3 = Palette.warn,
+        Size = UDim2.new(1, 0, 1, 0), Font = Enum.Font.GothamBold, TextSize = 9, TextColor3 = Palette.warn,
         TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54
     })
 
     function UI.applyHudSize()
-        local h
         if State.hudCollapsed then
-            h = 34
-        else
-            h = (Prefs.compact and 94 or 116) + (UI.hudWarnBar.Visible and 28 or 0)
+            UI.hudBody.Visible = false
+            UI.hud.Size = UDim2.fromOffset(304, 34)
+            return
         end
-        UI.hudBody.Visible = not State.hudCollapsed
-        UI.hudDiff.Visible = not Prefs.compact
-        UI.hudWarnBar.Position = UDim2.fromOffset(12, Prefs.compact and 58 or 78)
-        UI.hud.Size = UDim2.fromOffset(300, h)
+        UI.hudBody.Visible = true
+        local compact = Prefs.compact
+        local bodyH = compact and 60 or 94
+        UI.hudBar.Visible = not compact
+        UI.hudDiff.Visible = not compact
+        UI.hudWarnBar.Position = UDim2.fromOffset(12, bodyH)
+        UI.hud.Size = UDim2.fromOffset(304, 34 + bodyH + (UI.hudWarnBar.Visible and 30 or 0))
     end
     UI.applyHudSize()
 
@@ -1558,6 +1653,12 @@ local ok, failure = xpcall(function()
         UI.ownS.TextColor3 = mine.missS > 0 and Palette.warn or Palette.svInk
         UI.themS.TextColor3 = other.missS > 0 and Palette.warn or Palette.svInk
 
+        local totalS = mine.s + other.s
+        local share = (totalS > 0) and (mine.s / totalS) or 0.5
+        share = math.clamp(share, 0.04, 0.96)
+        UI.hudMine.Size = UDim2.new(share, -1, 1, 0)
+        UI.hudTheirs.Size = UDim2.new(1 - share, -1, 1, 0)
+
         local d = other.s - mine.s
         local dm = other.m - mine.m
         local txt, fg, bg
@@ -1570,7 +1671,7 @@ local ok, failure = xpcall(function()
         else
             local base = math.max(mine.s, other.s)
             if math.abs(d) <= math.max(2, base * 0.05) then
-                txt, fg, bg = "FAIR", Palette.mvInk, Palette.mvBg
+                txt, fg, bg = "FAIR", Palette.ink, Palette.surfaceHover
             elseif d > 0 then
                 txt, fg, bg = "WIN", Palette.pos, Palette.posBg
             else
@@ -1797,11 +1898,11 @@ local ok, failure = xpcall(function()
             ZIndex = 73
         })
 
-        Win.title = label(topbar, "Dashboard", {
+        Win.title = label(topbar, "DASHBOARD", {
             Position = UDim2.fromOffset(sideW + 22, 0),
-            Size = UDim2.fromOffset(260, topH),
+            Size = UDim2.new(1, -(sideW + 22) - 398, 0, topH),
             Font = Enum.Font.GothamBold,
-            TextSize = 15,
+            TextSize = 14,
             TextColor3 = Palette.ink,
             ZIndex = 73
         })
@@ -1832,13 +1933,13 @@ local ok, failure = xpcall(function()
         }, topbar)
         corner(Win.mvPill, 8)
 
-        local themeBtn = button(topbar, Prefs.theme == "CarbonWhite" and "Dark" or "Light", "default", {
+        local themeBtn = button(topbar, Prefs.theme == "CarbonLight" and "NIGHT" or "LIGHT", "default", {
             Position = UDim2.new(1, -168, 0, 12),
             Size = UDim2.fromOffset(58, 30),
-            TextSize = 11,
+            TextSize = 10,
             ZIndex = 74
         }, function()
-            Prefs.theme = (Prefs.theme == "CarbonWhite") and "CarbonDark" or "CarbonWhite"
+            Prefs.theme = (Prefs.theme == "CarbonDark") and "CarbonLight" or "CarbonDark"
             Palette = Themes[Prefs.theme]
             Store.savePrefs()
             Shell.applyTheme()
@@ -1846,7 +1947,7 @@ local ok, failure = xpcall(function()
         end)
 
         onThemeChanged(function()
-            themeBtn.Text = (Prefs.theme == "CarbonWhite") and "Dark" or "Light"
+            themeBtn.Text = (Prefs.theme == "CarbonDark") and "LIGHT" or "NIGHT"
             themeBtn.BackgroundColor3 = Palette.surface
             themeBtn.TextColor3 = Palette.ink
             local st = themeBtn:FindFirstChildOfClass("UIStroke")
@@ -1905,12 +2006,12 @@ local ok, failure = xpcall(function()
         }, Win.side)
 
         local navItems = {
-            {id = "Overview", glyph = "◈", label = "Overview", group = "TERMINAL"},
-            {id = "Values",   glyph = "⊞", label = "Market Index", group = "TERMINAL"},
-            {id = "Compare",  glyph = "⇄", label = "Compare Items", group = "ANALYTICS"},
-            {id = "Inventory",glyph = "◫", label = "Portfolio", group = "ANALYTICS"},
-            {id = "Servers",  glyph = "◉", label = "Trade Servers", group = "NETWORK"},
-            {id = "Settings", glyph = "⚙", label = "Settings", group = "SYSTEM"}
+            {id = "Overview", glyph = "◈", label = "OVERVIEW", group = "TERMINAL"},
+            {id = "Values",   glyph = "⊞", label = "MARKET INDEX", group = "TERMINAL"},
+            {id = "Compare",  glyph = "⇄", label = "COMPARE ITEMS", group = "ANALYTICS"},
+            {id = "Inventory",glyph = "◫", label = "PORTFOLIO", group = "ANALYTICS"},
+            {id = "Servers",  glyph = "◉", label = "TRADE SERVERS", group = "NETWORK"},
+            {id = "Settings", glyph = "⚙", label = "SETTINGS", group = "SYSTEM"}
         }
 
         local yCursor = 16
@@ -2077,7 +2178,7 @@ local ok, failure = xpcall(function()
                 Motion.spring(shadow, {Size = UDim2.fromOffset(nw + 16, nh + 16)}, 0.24)
                 Motion.spring(Win.side, {Size = UDim2.new(0, nSideW, 1, -topH)}, 0.22)
                 Motion.spring(Win.content, {Position = UDim2.fromOffset(nSideW, topH), Size = UDim2.new(1, -nSideW, 1, -topH)}, 0.22)
-                Motion.spring(Win.title, {Position = UDim2.fromOffset(nSideW + 22, 0)}, 0.22)
+                Motion.spring(Win.title, {Position = UDim2.fromOffset(nSideW + 22, 0), Size = UDim2.new(1, -(nSideW + 22) - 398, 0, topH)}, 0.22)
             else
                 UI.win.Size = UDim2.fromOffset(nw, nh)
                 shadow.Size = UDim2.fromOffset(nw + 16, nh + 16)
@@ -2085,6 +2186,7 @@ local ok, failure = xpcall(function()
                 Win.content.Position = UDim2.fromOffset(nSideW, topH)
                 Win.content.Size = UDim2.new(1, -nSideW, 1, -topH)
                 Win.title.Position = UDim2.fromOffset(nSideW + 22, 0)
+                Win.title.Size = UDim2.new(1, -(nSideW + 22) - 398, 0, topH)
             end
             statusCard.Visible = not Prefs.sidebarCollapsed
             for _, refs in pairs(Shell.navButtons) do
@@ -2119,7 +2221,10 @@ local ok, failure = xpcall(function()
 
     function Win.newPage()
         disconnectBag(State.tabConns)
-        if Win.page then pcall(function() Win.page:Destroy() end) end
+        if Win.page then
+            if Win.pageTab then pcall(function() Win.scrollMemory[Win.pageTab] = Win.page.CanvasPosition end) end
+            pcall(function() Win.page:Destroy() end)
+        end
         Win.order = 0
         Win.refresh = nil
         Win.page = mk("ScrollingFrame", {
@@ -2136,6 +2241,16 @@ local ok, failure = xpcall(function()
         }, Win.content)
         pad(Win.page, 18, 22, 18, 22)
         vlist(Win.page, 14)
+        Win.pageTab = State.currentTab
+        local restore = Win.scrollMemory[State.currentTab]
+        if restore and restore.Y > 0 then
+            local pageRef = Win.page
+            task.defer(function()
+                if State.alive and Win.page == pageRef then
+                    pageRef.CanvasPosition = restore
+                end
+            end)
+        end
         return Win.page
     end
 
@@ -2145,7 +2260,7 @@ local ok, failure = xpcall(function()
     local Components = {}
 
     function Components.badge(parent, text, tone, props)
-        local fg, bg = Palette.inkSub, Palette.surfaceAlt
+        local fg, bg = Palette.inkSub, Palette.surfaceHover
         if tone == "pos" then
             fg, bg = Palette.pos, Palette.posBg
         elseif tone == "neg" then
@@ -2195,10 +2310,10 @@ local ok, failure = xpcall(function()
             cardStroke.Color = Palette.border
         end, State.tabConns)
 
-        label(cardFrame, opts.title, {
-            Size = UDim2.new(1, -34, 0, 16),
-            Font = Enum.Font.GothamMedium,
-            TextSize = 11,
+        label(cardFrame, string.upper(tostring(opts.title or "")), {
+            Size = UDim2.new(1, -40, 0, 16),
+            Font = Enum.Font.GothamBold,
+            TextSize = 10,
             TextColor3 = Palette.inkSub,
             ZIndex = 74
         })
@@ -2215,8 +2330,8 @@ local ok, failure = xpcall(function()
         local valLabel = label(cardFrame, "—", {
             Position = UDim2.fromOffset(0, 22),
             Size = UDim2.new(1, 0, 0, 26),
-            Font = Enum.Font.GothamBold,
-            TextSize = 20,
+            Font = Enum.Font.GothamBlack,
+            TextSize = 21,
             TextColor3 = opts.valueColor or Palette.ink,
             ZIndex = 74
         })
@@ -2259,11 +2374,11 @@ local ok, failure = xpcall(function()
             ZIndex = 74
         }, frame)
 
-        label(header, title, {
+        label(header, string.upper(tostring(title or "")), {
             Position = UDim2.fromOffset(18, subtitle and 9 or 0),
             Size = UDim2.new(1, -140, 0, subtitle and 18 or 48),
             Font = Enum.Font.GothamBold,
-            TextSize = 13,
+            TextSize = 12,
             TextColor3 = Palette.ink,
             ZIndex = 75
         })
@@ -2730,7 +2845,7 @@ local ok, failure = xpcall(function()
         local render
 
         local toolbar = mk("Frame", {
-            Size = UDim2.new(1, 0, 0, 36),
+            Size = UDim2.new(1, 0, 0, 74),
             BackgroundTransparency = 1,
             LayoutOrder = ord(),
             ZIndex = 73
@@ -2755,17 +2870,17 @@ local ok, failure = xpcall(function()
         end, State.tabConns)
 
         local filterSetters = {}
-        local filterX = 322
+        local filterX = 0
         for _, f in ipairs({
-            {id = "All", label = "All", w = 48},
-            {id = "Favs", label = "Favorites", w = 74},
-            {id = "Wish", label = "Wishlist", w = 68},
+            {id = "All", label = "ALL", w = 48},
+            {id = "Favs", label = "FAVORITES", w = 78},
+            {id = "Wish", label = "WISHLIST", w = 74},
             {id = "High", label = "500+ SV", w = 68},
-            {id = "Chroma", label = "Chroma", w = 66}
+            {id = "Chroma", label = "CHROMA", w = 70}
         }) do
             local b = mk("TextButton", {
                 Text = f.label,
-                Position = UDim2.fromOffset(filterX, 2),
+                Position = UDim2.fromOffset(filterX, 40),
                 Size = UDim2.fromOffset(f.w, 30),
                 BackgroundColor3 = Palette.surface,
                 TextColor3 = Palette.inkSub,
@@ -2798,11 +2913,11 @@ local ok, failure = xpcall(function()
         filterSetters[State.valueFilter](true)
 
         local sortCycle = {
-            {id = "SV_DESC", label = "Sort: SV ↓"},
-            {id = "SV_ASC",  label = "Sort: SV ↑"},
-            {id = "MV_DESC", label = "Sort: MV ↓"},
-            {id = "DEM_DESC",label = "Sort: Demand ↓"},
-            {id = "NAME_ASC",label = "Sort: A–Z"}
+            {id = "SV_DESC", label = "SORT: SV ↓"},
+            {id = "SV_ASC",  label = "SORT: SV ↑"},
+            {id = "MV_DESC", label = "SORT: MV ↓"},
+            {id = "DEM_DESC",label = "SORT: DEMAND ↓"},
+            {id = "NAME_ASC",label = "SORT: A–Z"}
         }
         local function getSortLabel()
             for _, s in ipairs(sortCycle) do
@@ -3010,7 +3125,7 @@ local ok, failure = xpcall(function()
             }, tr)
             corner(favBtn, 6)
             attach(favBtn.MouseButton1Click, function()
-                Prefs.favs[row.name] = not (Prefs.favs[row.name] == true) or nil
+                if Prefs.favs[row.name] then Prefs.favs[row.name] = nil else Prefs.favs[row.name] = true end
                 Store.savePrefs()
                 render()
             end, State.tabConns)
@@ -3029,7 +3144,7 @@ local ok, failure = xpcall(function()
             }, tr)
             corner(wishBtn, 6)
             attach(wishBtn.MouseButton1Click, function()
-                Prefs.wishlist[row.name] = not (Prefs.wishlist[row.name] == true) or nil
+                if Prefs.wishlist[row.name] then Prefs.wishlist[row.name] = nil else Prefs.wishlist[row.name] = true end
                 Store.savePrefs()
                 render()
             end, State.tabConns)
@@ -3156,6 +3271,8 @@ local ok, failure = xpcall(function()
             ZIndex = 74
         })
 
+        local boxB
+
         button(selectorBar, "⇄", "default", {
             Position = UDim2.new(0.5, -18, 0, 1),
             Size = UDim2.fromOffset(36, 34),
@@ -3164,11 +3281,11 @@ local ok, failure = xpcall(function()
         }, function()
             State.compareA, State.compareB = State.compareB, State.compareA
             boxA.Text = State.compareA
-            boxB.Text = State.compareB
+            if boxB then boxB.Text = State.compareB end
             update()
         end, State.tabConns)
 
-        local boxB = inputBox(selectorBar, "Comparison item (e.g. Elderwood Scythe)...", State.compareB, {
+        boxB = inputBox(selectorBar, "Comparison item (e.g. Elderwood Scythe)...", State.compareB, {
             Position = UDim2.new(0.5, 26, 0, 0),
             Size = UDim2.new(0.5, -26, 0, 36),
             ZIndex = 74
@@ -3354,18 +3471,18 @@ local ok, failure = xpcall(function()
         }, kpiRow)
 
         local actionBar = mk("Frame", {
-            Size = UDim2.new(1, 0, 0, 36),
+            Size = UDim2.new(1, 0, 0, 78),
             BackgroundTransparency = 1,
             LayoutOrder = ord(),
             ZIndex = 73
         }, page)
 
         local nameBox = inputBox(actionBar, "Add item to portfolio (e.g. Corrupt, Gingerscope)...", State.invQuery, {
-            Size = UDim2.fromOffset(310, 34),
+            Size = UDim2.new(1, -192, 0, 34),
             ZIndex = 74
         })
         local qtyBox = inputBox(actionBar, "Qty", State.invQty, {
-            Position = UDim2.fromOffset(318, 0),
+            Position = UDim2.new(1, -184, 0, 0),
             Size = UDim2.fromOffset(64, 34),
             TextXAlignment = Enum.TextXAlignment.Center,
             ZIndex = 74
@@ -3373,12 +3490,7 @@ local ok, failure = xpcall(function()
 
         local render
 
-        button(actionBar, "+ Add Holding", "primary", {
-            Position = UDim2.fromOffset(390, 0),
-            Size = UDim2.fromOffset(112, 34),
-            TextSize = 11,
-            ZIndex = 75
-        }, function()
+        local function addHolding()
             local row = Util.resolve(State.invQuery)
             if not row then
                 notify("Item not found", "Enter a valid MM2 item name", Palette.warn)
@@ -3405,16 +3517,29 @@ local ok, failure = xpcall(function()
             State.invQuery = ""
             notify("Portfolio updated", row.name .. " (×" .. qty .. ") added", Palette.pos)
             render()
-        end, State.tabConns)
+        end
+
+        button(actionBar, "+ Add Holding", "primary", {
+            Position = UDim2.new(1, -112, 0, 0),
+            Size = UDim2.fromOffset(112, 34),
+            TextSize = 11,
+            ZIndex = 75
+        }, addHolding, State.tabConns)
 
         local filterBox = inputBox(actionBar, "Filter holdings...", State.invFilter, {
-            Position = UDim2.new(1, -210, 0, 0),
-            Size = UDim2.fromOffset(210, 34),
+            Position = UDim2.fromOffset(0, 42),
+            Size = UDim2.fromOffset(280, 34),
             ZIndex = 74
         })
 
         attach(nameBox:GetPropertyChangedSignal("Text"), function() State.invQuery = nameBox.Text end, State.tabConns)
         attach(qtyBox:GetPropertyChangedSignal("Text"), function() State.invQty = qtyBox.Text end, State.tabConns)
+        attach(nameBox.FocusLost, function(_, enterPressed)
+            if enterPressed then pcall(addHolding) end
+        end, State.tabConns)
+        attach(qtyBox.FocusLost, function(_, enterPressed)
+            if enterPressed then pcall(addHolding) end
+        end, State.tabConns)
         attach(filterBox:GetPropertyChangedSignal("Text"), function()
             State.invFilter = filterBox.Text
             render()
@@ -3652,10 +3777,10 @@ local ok, failure = xpcall(function()
         local setters = {}
         local chipX = 0
         for _, cat in ipairs({
-            {id = "ANY",  label = "Any Ages",        w = 84},
-            {id = "AGE",  label = "15–18+ Verified", w = 116},
-            {id = "HIGH", label = "High Tier",       w = 84},
-            {id = "ALL",  label = "All Servers",     w = 88}
+            {id = "ANY",  label = "ANY AGES",        w = 84},
+            {id = "AGE",  label = "15–18+ VERIFIED", w = 122},
+            {id = "HIGH", label = "HIGH TIER",       w = 84},
+            {id = "ALL",  label = "ALL SERVERS",     w = 94}
         }) do
             local b = mk("TextButton", {
                 Text = cat.label,
@@ -3830,19 +3955,20 @@ local ok, failure = xpcall(function()
     -- ========================================================================
     Tabs.Settings = function(page)
         local appearancePanel = Components.panel(page, "Appearance & Currency Format", "Customize visual surface theme and valuation labels", {
-            Size = UDim2.new(1, 0, 0, 156),
+            Size = UDim2.new(1, 0, 0, 184),
             LayoutOrder = ord()
         })
 
         local appBody = mk("Frame", {
             Position = UDim2.fromOffset(18, 58),
-            Size = UDim2.new(1, -36, 0, 88),
+            Size = UDim2.new(1, -36, 0, 112),
             BackgroundTransparency = 1,
             ZIndex = 74
         }, appearancePanel)
 
         label(appBody, "Interface Theme", {
-            Size = UDim2.fromOffset(180, 32),
+            Position = UDim2.fromOffset(0, 1),
+            Size = UDim2.fromOffset(150, 30),
             Font = Enum.Font.GothamBold,
             TextSize = 12,
             ZIndex = 75
@@ -3850,17 +3976,17 @@ local ok, failure = xpcall(function()
 
         local themeSetters = {}
         for _, tOpt in ipairs({
-            {id = "CarbonWhite", label = "Carbon White", x = 190},
-            {id = "CarbonDark",  label = "Carbon Dark",  x = 310}
+            {id = "CarbonDark",  label = "CARBON NIGHT",  x = 160, w = 104},
+            {id = "CarbonLight", label = "CARBON LIGHT",  x = 270, w = 104}
         }) do
             local b = mk("TextButton", {
                 Text = tOpt.label,
                 Position = UDim2.fromOffset(tOpt.x, 1),
-                Size = UDim2.fromOffset(112, 30),
+                Size = UDim2.fromOffset(tOpt.w, 30),
                 BackgroundColor3 = Palette.surfaceAlt,
                 TextColor3 = Palette.inkSub,
                 Font = Enum.Font.GothamMedium,
-                TextSize = 11,
+                TextSize = 10,
                 AutoButtonColor = false,
                 BorderSizePixel = 0,
                 ZIndex = 75
@@ -3887,7 +4013,7 @@ local ok, failure = xpcall(function()
 
         label(appBody, "Currency Display", {
             Position = UDim2.fromOffset(0, 46),
-            Size = UDim2.fromOffset(180, 32),
+            Size = UDim2.fromOffset(150, 30),
             Font = Enum.Font.GothamBold,
             TextSize = 12,
             ZIndex = 75
@@ -3895,18 +4021,18 @@ local ok, failure = xpcall(function()
 
         local currSetters = {}
         for _, cOpt in ipairs({
-            {id = "BOTH", label = "Supreme + MM2Values", x = 190, w = 152},
-            {id = "SV",   label = "Supreme (SV)",        x = 350, w = 108},
-            {id = "MV",   label = "MM2Values (MV)",      x = 466, w = 118}
+            {id = "BOTH", label = "SUPREME + MM2VALUES", x = 0,   w = 150},
+            {id = "SV",   label = "SUPREME (SV)",        x = 156, w = 104},
+            {id = "MV",   label = "MM2VALUES (MV)",      x = 266, w = 108}
         }) do
             local b = mk("TextButton", {
                 Text = cOpt.label,
-                Position = UDim2.fromOffset(cOpt.x, 47),
+                Position = UDim2.fromOffset(cOpt.x, 76),
                 Size = UDim2.fromOffset(cOpt.w, 30),
                 BackgroundColor3 = Palette.surfaceAlt,
                 TextColor3 = Palette.inkSub,
                 Font = Enum.Font.GothamMedium,
-                TextSize = 11,
+                TextSize = 10,
                 AutoButtonColor = false,
                 BorderSizePixel = 0,
                 ZIndex = 75
@@ -4042,14 +4168,14 @@ local ok, failure = xpcall(function()
         State.currentTab = name
         Win.paintTabs()
         local pageTitles = {
-            Overview = "Dashboard",
-            Values = "Market Index",
-            Compare = "Compare Items",
-            Inventory = "Portfolio",
-            Servers = "Trade Servers",
-            Settings = "Settings"
+            Overview = "DASHBOARD",
+            Values = "MARKET INDEX",
+            Compare = "COMPARE ITEMS",
+            Inventory = "PORTFOLIO",
+            Servers = "TRADE SERVERS",
+            Settings = "SETTINGS"
         }
-        Win.title.Text = pageTitles[name] or name
+        Win.title.Text = string.upper(pageTitles[name] or name)
         local page = Win.newPage()
         local okTab, err = pcall(Tabs[name], page)
         if not okTab then
@@ -4088,6 +4214,11 @@ local ok, failure = xpcall(function()
             UI.hudDiff.TextColor3 = Palette.inkSub
             UI.ownM.TextColor3 = Palette.mvInk
             UI.themM.TextColor3 = Palette.mvInk
+            if UI.hudBar then
+                UI.hudBar.BackgroundColor3 = Palette.surfaceHover
+                UI.hudMine.BackgroundColor3 = Palette.ink
+                UI.hudTheirs.BackgroundColor3 = Palette.inkMuted
+            end
         end
 
         for _, badge in pairs(State.badges) do
@@ -4121,7 +4252,7 @@ local ok, failure = xpcall(function()
             local targetW, targetH = computeShellSize()
             Win.scale.Scale = math.clamp(math.min((State.screenSize.X - 16) / targetW, (State.screenSize.Y - 16) / targetH), 0.45, 1)
         end
-        UI.hudScale.Scale = math.clamp((State.screenSize.X - 16) / 300, 0.65, 1)
+        UI.hudScale.Scale = math.clamp((State.screenSize.X - 16) / 304, 0.65, 1)
         pcall(clampInto, UI.hud)
         pcall(clampInto, UI.launcher)
     end
@@ -4170,11 +4301,23 @@ local ok, failure = xpcall(function()
         if State.alive then pcall(applyLayout) end
     end)
 
+    local refreshQueued = false
+    local function scheduleViewRefresh()
+        if refreshQueued then return end
+        refreshQueued = true
+        task.delay(0.3, function()
+            refreshQueued = false
+            if State.alive and UI.win and UI.win.Visible and Win.refresh then
+                pcall(Win.refresh)
+            end
+        end)
+    end
+
     Data.listeners[#Data.listeners + 1] = function()
         if not State.alive then return end
         UI.updateStatus()
         if State.latestTrade then pcall(updateHud, State.latestTrade) end
-        if UI.win.Visible and Win.refresh then pcall(Win.refresh) end
+        if UI.win and UI.win.Visible then scheduleViewRefresh() end
     end
 
     -- ========================================================================
@@ -4245,17 +4388,21 @@ if not ok then
         g.DisplayOrder = 10001
         g.Parent = pg
         local t = Instance.new("TextLabel")
-        t.Size = UDim2.fromOffset(320, 84)
-        t.Position = UDim2.new(0.5, -160, 0, 64)
-        t.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        t.TextColor3 = Color3.fromRGB(218, 30, 40)
+        t.Size = UDim2.fromOffset(340, 96)
+        t.Position = UDim2.new(0.5, -170, 0, 64)
+        t.BackgroundColor3 = Color3.fromRGB(21, 22, 25)
+        t.TextColor3 = Color3.fromRGB(245, 246, 248)
         t.TextWrapped = true
         t.TextSize = 12
         t.Font = Enum.Font.GothamMedium
         t.Text = "CARBON ERROR\n" .. tostring(failure):sub(1, 240)
         t.Parent = g
         local c = Instance.new("UICorner")
-        c.CornerRadius = UDim.new(0, 8)
+        c.CornerRadius = UDim.new(0, 10)
         c.Parent = t
+        local s = Instance.new("UIStroke")
+        s.Color = Color3.fromRGB(40, 43, 48)
+        s.Thickness = 1
+        s.Parent = t
     end)
 end
